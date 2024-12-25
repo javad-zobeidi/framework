@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
-
+import 'package:vania/vania.dart';
 import 'session_file_store .dart';
 
 class SessionManager {
@@ -11,7 +11,7 @@ class SessionManager {
 
   HttpRequest? _request;
 
-  final Duration _sessionTimeout = const Duration(seconds: 3600);
+  final Duration _sessionLifeTime = Duration(seconds: env<int>('SESSION_LIFETIME', 3600));
 
   final Random _random = Random.secure();
 
@@ -60,7 +60,7 @@ class SessionManager {
         ..httpOnly = true
         ..secure = false
         ..path = '/'
-        ..expires = DateTime.now().add(_sessionTimeout),
+        ..expires = DateTime.now().add(_sessionLifeTime),
     );
 
     return sessionId;
