@@ -16,6 +16,22 @@ class RequestFormData {
 
   RequestFormData({required this.request});
 
+  /// Extract form data from the current request.
+  ///
+  /// This method is used to parse form data from the current request.
+  /// It will extract the form data from the request body and store them in the
+  /// [inputs] property.
+  ///
+  /// The method works by transforming the request body into a list of
+  /// [MimeMultipart] objects. Then it will loop through each part and extract the
+  /// name and filename from the 'content-disposition' header. If the filename is
+  /// not null and not empty, the method will create a [RequestFile] object and
+  /// store it in the [inputs] property. If the input name contains '[]', the
+  /// method will create a list of [RequestFile] objects and store it in the
+  /// [inputs] property. Otherwise, the method will store the string value of the
+  /// part in the [inputs] property.
+  ///
+  /// The method returns the current object.
   Future extractData() async {
     MimeMultipartTransformer transformer = MimeMultipartTransformer(
         request.headers.contentType!.parameters['boundary']!);
@@ -75,6 +91,20 @@ class RequestFormData {
 
     return this;
   }
+
+  /// Parses the Content-Disposition header of a form-data part.
+  ///
+  /// This method takes the header string and uses a `StringScanner` to
+  /// extract key-value pairs that represent parameters of the
+  /// Content-Disposition header. Keys and values are separated by "="
+  /// and multiple parameters are separated by ";".
+  ///
+  /// Quoted strings are handled correctly by removing surrounding quotes
+  /// and unescaping any quoted-pair characters. The resulting parameters
+  /// are returned as a map.
+  ///
+  /// Throws a `FormatException` if the header does not conform to the
+  /// expected format.
 
   Map<String, String> _parseFormDataContentDisposition(String header) {
     StringScanner scanner = StringScanner(header);

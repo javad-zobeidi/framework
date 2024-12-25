@@ -8,7 +8,22 @@ import 'package:vania/src/route/route_handler.dart';
 import 'package:vania/src/websocket/web_socket_handler.dart';
 import 'package:vania/vania.dart';
 
+import '../session/session_manager.dart';
+
+/// Handles HTTP requests, determining if the request is a WebSocket upgrade or
+/// a standard HTTP request. If it's a WebSocket request, it delegates handling
+/// to the WebSocketHandler; otherwise, it processes the request by checking
+/// CORS, handling routes, invoking middleware, and executing the appropriate
+/// controller action. The function also manages session initiation and logs
+/// request details in debug mode.
+///
+/// Throws:
+/// - [BaseHttpResponseException] if there is an issue with the HTTP response.
+/// - [InvalidArgumentException] if an invalid argument is encountered.
+
 Future httpRequestHandler(HttpRequest req) async {
+  SessionManager().sessionStart(req, req.response);
+
   /// Check the incoming request is web socket or not
   if (env<bool>('APP_WEBSOCKET', false) &&
       WebSocketTransformer.isUpgradeRequest(req)) {
