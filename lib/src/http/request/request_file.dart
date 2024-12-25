@@ -85,6 +85,17 @@ class RequestFile {
     return path.replaceFirst('public', '');
   }
 
+  /// Calculates the total size of the file in bytes.
+  ///
+  /// This function takes a list of bytes and sums up all the elements
+  /// to return the total file size in bytes.
+  ///
+  /// **Parameters:**
+  /// - `bytesList`: A list of integers representing the file content in bytes.
+  ///
+  /// **Returns:**
+  /// The total size of the file in bytes as a `num`.
+
   num _getFileSize(Uint8List bytesList) =>
       bytesList.reduce((int value, int element) => value + element);
 
