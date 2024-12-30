@@ -31,7 +31,7 @@ class SessionFileStore {
   /// The default duration is 1 hour.
   ///
   /// The method is asynchronous and returns a Future<void>.
-  void storeSession(String sessionId, Map<String, dynamic> data,
+  Future<void> storeSession(String sessionId, Map<String, dynamic> data,
       {Duration duration = const Duration(hours: 1)}) async {
     sessionId = _makeHash(sessionId).toString();
     final file = File('$sessionPath/$sessionId');

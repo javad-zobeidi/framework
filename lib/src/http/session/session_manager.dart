@@ -85,7 +85,7 @@ class SessionManager {
   /// Returns:
   /// A map containing the session data if a valid session exists, otherwise
   /// returns null.
-  Map<String, dynamic>? getAllSessions() {
+  Map<String, dynamic>? allSessions() {
     final sessionId = getSessionId();
     if (sessionId != null) {
       if (!SessionFileStore().hasSession(sessionId)) {
@@ -100,7 +100,7 @@ class SessionManager {
   }
 
   dynamic getSession(String key) {
-    Map<String, dynamic>? session = getAllSessions();
+    Map<String, dynamic>? session = allSessions();
     return session?[key];
   }
 
@@ -111,13 +111,13 @@ class SessionManager {
   /// and saves the updated session data. If the session does not exist or is invalid,
   /// it does not store the value.
   ///
-  void setSession(String key, dynamic value) {
+  Future<void> setSession(String key, dynamic value) async {
     final sessionId = getSessionId();
     if (sessionId != null) {
       Map<String, dynamic> session =
           SessionFileStore().retrieveSession(sessionId) ?? {};
       session.addAll({key: value});
-      SessionFileStore().storeSession(sessionId, session);
+      await SessionFileStore().storeSession(sessionId, session);
     }
   }
 
