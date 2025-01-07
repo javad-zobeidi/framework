@@ -2,6 +2,9 @@ import 'dart:io';
 import 'package:vania/src/localization_handler/localization.dart';
 import 'package:vania/vania.dart';
 
+import '../http/session/session_manager.dart';
+import '../view_engine/template_engine.dart';
+
 String storagePath(String file) => 'storage/$file';
 
 String publicPath(String file) => 'public/$file';
@@ -49,3 +52,11 @@ void dbTransaction(
     );
   });
 }
+
+Response view(String template, [Map<String, dynamic>? context]) =>
+    Response.html(TemplateEngine().render(template, context));
+
+Future<void> setSession(String key, dynamic value) async =>
+    await SessionManager().setSession(key, value);
+dynamic getSession(String key) => SessionManager().getSession(key);
+Map<String, dynamic>? allSessions() => SessionManager().allSessions();
