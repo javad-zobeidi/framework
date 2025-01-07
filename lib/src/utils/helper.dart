@@ -58,5 +58,11 @@ Response view(String template, [Map<String, dynamic>? context]) =>
 
 Future<void> setSession(String key, dynamic value) async =>
     await SessionManager().setSession(key, value);
-dynamic getSession(String key) => SessionManager().getSession(key);
-Map<String, dynamic>? allSessions() => SessionManager().allSessions();
+Future<T> getSession<T>(String key) async =>
+    await SessionManager().getSession<T>(key);
+Future<Map<String, dynamic>?> allSessions() async =>
+    await SessionManager().allSessions();
+Future<void> deleteSession(String key) async =>
+    await SessionManager().deleteSession(key);
+Future<void> destroyAllSessions() async =>
+    await SessionManager().destroyAllSessions();

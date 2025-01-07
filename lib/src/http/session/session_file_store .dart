@@ -52,7 +52,7 @@ class SessionFileStore {
   ///
   /// The method is synchronous and returns a Map<String, dynamic> containing the session data.
   /// If the session has expired, the method deletes the file and returns null.
-  Map<String, dynamic>? retrieveSession(String sessionId) {
+  Future<Map<String, dynamic>?> retrieveSession(String sessionId) async {
     sessionId = _makeHash(sessionId).toString();
     final file = File('$sessionPath/$sessionId');
 
@@ -61,7 +61,7 @@ class SessionFileStore {
     }
 
     Map<String, dynamic> data = json.decode(
-        VaniaEncryption.decryptString(file.readAsStringSync(), _secretKey));
+        VaniaEncryption.decryptString(await file.readAsString(), _secretKey));
     int expiration = data['expiration'].toString().toInt() ?? 0;
     if (!DateTime.now()
         .toUtc()
@@ -76,14 +76,14 @@ class SessionFileStore {
   ///
   /// The method is synchronous and returns a boolean indicating if the session exists and is valid.
   /// If the session has expired, the method deletes the file and returns false.
-  bool hasSession(String sessionId) {
+  Future<bool> hasSession(String sessionId) async {
     sessionId = _makeHash(sessionId).toString();
     final file = File('$sessionPath/$sessionId');
     if (!file.existsSync()) {
       return false;
     }
     Map<String, dynamic> data = json.decode(
-        VaniaEncryption.decryptString(file.readAsStringSync(), _secretKey));
+        VaniaEncryption.decryptString(await file.readAsString(), _secretKey));
     int expiration = data['expiration'].toString().toInt() ?? 0;
     if (!DateTime.now()
         .toUtc()
@@ -94,11 +94,11 @@ class SessionFileStore {
     return true;
   }
 
-  void deleteSession(String sessionId) {
+  Future<void> deleteSession(String sessionId) async {
     sessionId = _makeHash(sessionId).toString();
     final file = File('$sessionPath/$sessionId');
     if (file.existsSync()) {
-      file.deleteSync();
+      await file.delete();
     }
   }
 
