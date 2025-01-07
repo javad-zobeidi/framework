@@ -86,22 +86,39 @@ class SessionManager {
   /// Returns:
   /// A map containing the session data if a valid session exists, otherwise
   /// returns null.
-  Map<String, dynamic>? allSessions() {
+  Future<Map<String, dynamic>?> allSessions() async {
     final sessionId = getSessionId();
     if (sessionId != null) {
-      if (!SessionFileStore().hasSession(sessionId)) {
+      if (!await SessionFileStore().hasSession(sessionId)) {
         return null;
       }
       Map<String, dynamic> session = {};
 
-      session = SessionFileStore().retrieveSession(sessionId) ?? {};
+      session = await SessionFileStore().retrieveSession(sessionId) ?? {};
       return session;
     }
     return null;
   }
 
-  dynamic getSession(String key) {
-    Map<String, dynamic>? session = allSessions();
+  Future<T> getSession<T>(String key) async {
+    Map<String, dynamic>? session = await allSessions();
+
+    if (session?[key] == null) {
+      return null as T;
+    }
+
+    if (T.toString() == 'int') {
+      return int.tryParse(session?[key].toString() ?? '') as T;
+    }
+
+    if (T.toString() == 'double') {
+      return double.tryParse(session?[key].toString() ?? '') as T;
+    }
+
+    if (T.toString() == 'bool') {
+      return bool.tryParse(session?[key].toString() ?? '') as T;
+    }
+
     return session?[key];
   }
 
@@ -116,7 +133,7 @@ class SessionManager {
     final sessionId = getSessionId();
     if (sessionId != null) {
       Map<String, dynamic> session =
-          SessionFileStore().retrieveSession(sessionId) ?? {};
+          await SessionFileStore().retrieveSession(sessionId) ?? {};
       session.addAll({key: value});
       await SessionFileStore().storeSession(sessionId, session);
     }
@@ -131,20 +148,21 @@ class SessionManager {
   ///
   /// Parameters:
   /// - [key]: The key to be deleted from the session data.
-  void deleteSessionKey(String key) {
+  Future<void> deleteSession(String key) async {
     final sessionId = getSessionId();
     if (sessionId != null) {
       Map<String, dynamic> session =
-          SessionFileStore().retrieveSession(sessionId) ?? {};
+          await SessionFileStore().retrieveSession(sessionId) ?? {};
       session.remove(key);
-      SessionFileStore().storeSession(sessionId, session);
+      print(session);
+      await SessionFileStore().storeSession(sessionId, session);
     }
   }
 
-  void destroySession() {
+  Future<void> destroyAllSessions() async {
     final sessionId = getSessionId();
     if (sessionId != null) {
-      SessionFileStore().deleteSession(sessionId);
+      await SessionFileStore().storeSession(sessionId, {});
     }
   }
 }
