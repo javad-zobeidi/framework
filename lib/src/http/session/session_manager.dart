@@ -11,7 +11,8 @@ class SessionManager {
 
   HttpRequest? _request;
 
-  final Duration _sessionLifeTime = Duration(seconds: env<int>('SESSION_LIFETIME', 3600));
+  final Duration _sessionLifeTime =
+      Duration(seconds: env<int>('SESSION_LIFETIME', 3600));
 
   final Random _random = Random.secure();
 
