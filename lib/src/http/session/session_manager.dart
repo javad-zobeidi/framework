@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
-
+import 'package:vania/vania.dart';
 import 'session_file_store .dart';
 
 class SessionManager {
@@ -11,7 +11,8 @@ class SessionManager {
 
   HttpRequest? _request;
 
-  final Duration _sessionTimeout = const Duration(seconds: 3600);
+  final Duration _sessionLifeTime =
+      Duration(seconds: env<int>('SESSION_LIFETIME', 3600));
 
   final Random _random = Random.secure();
 
@@ -60,7 +61,7 @@ class SessionManager {
         ..httpOnly = true
         ..secure = false
         ..path = '/'
-        ..expires = DateTime.now().add(_sessionTimeout),
+        ..expires = DateTime.now().add(_sessionLifeTime),
     );
 
     return sessionId;
@@ -85,7 +86,7 @@ class SessionManager {
   /// Returns:
   /// A map containing the session data if a valid session exists, otherwise
   /// returns null.
-  Map<String, dynamic>? getAllSessions() {
+  Map<String, dynamic>? allSessions() {
     final sessionId = getSessionId();
     if (sessionId != null) {
       if (!SessionFileStore().hasSession(sessionId)) {
@@ -100,7 +101,7 @@ class SessionManager {
   }
 
   dynamic getSession(String key) {
-    Map<String, dynamic>? session = getAllSessions();
+    Map<String, dynamic>? session = allSessions();
     return session?[key];
   }
 
@@ -111,13 +112,13 @@ class SessionManager {
   /// and saves the updated session data. If the session does not exist or is invalid,
   /// it does not store the value.
   ///
-  void setSession(String key, dynamic value) {
+  Future<void> setSession(String key, dynamic value) async {
     final sessionId = getSessionId();
     if (sessionId != null) {
       Map<String, dynamic> session =
           SessionFileStore().retrieveSession(sessionId) ?? {};
       session.addAll({key: value});
-      SessionFileStore().storeSession(sessionId, session);
+      await SessionFileStore().storeSession(sessionId, session);
     }
   }
 
