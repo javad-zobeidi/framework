@@ -1,3 +1,8 @@
+## 0.7.1
+
+- Add delete Session to the helper
+- Add `async-await` for all Session methods
+
 ## 0.7.0
 
 - Feat(Session Management): Session handling capabilities to manage user sessions effectively.
