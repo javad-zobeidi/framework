@@ -32,6 +32,11 @@ class Env {
     if (T.toString() == 'int') {
       return int.parse(value.toString()) as T;
     }
+
+    if (T.toString() == 'double') {
+      return double.parse(value.toString()) as T;
+    }
+
     if (T.toString() == 'num') {
       return num.parse(value.toString()) as T;
     }
