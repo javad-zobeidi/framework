@@ -1,6 +1,12 @@
+## 0.7.0
+
+- Feat(Session Management): Session handling capabilities to manage user sessions effectively.
+- Feat(Template engine): Support for rendering HTML templates using a template engine. To handle dynamic HTML rendering with support for control structures.
+- chore: Upgraded project dependencies
+
 ## 0.6.2
 
-- Add redirect method  [#144](https://github.com/vania-dart/framework/issues/144)
+- Add redirect method [#144](https://github.com/vania-dart/framework/issues/144)
 - Add custom 404 error handling via HTML file [#145](https://github.com/vania-dart/framework/issues/145)
 
 ## 0.6.1
@@ -22,14 +28,14 @@
 
 ## 0.5.0
 
-- feat: Gate feature for defining user permissions
+- Feat: Gate feature for defining user permissions
 - Add WebSocket connect, disconnect, and error handling on the server side (#126)
 - Add user getter method to Request class
 
 ## 0.4.3
 
 - Fix nested json [#128](https://github.com/vania-dart/framework/issues/128)
-- Add  json to the request `request.json()`
+- Add json to the request `request.json()`
 
 ## 0.4.2
 
@@ -51,24 +57,24 @@
 
 ## 0.3.5+1
 
-- Fix send message  to room
+- Fix send message to room
 
 ## 0.3.5
 
-- Fix websocket session id
-- Add get room memmbers
+- Fix WebSocket session id
+- Add get room members
 - Add is active session
 - Add get active room
 - Add get active sessions
 
 ## 0.3.4
 
-- Fix route camle case issue
+- Fix route camel-case issue
 - Add get cookie from the request
 
 ## 0.3.3+1
 
-- Fix encoding charset for form input handling
+- Fix encoding char-set for form input handling
 
 ## 0.3.3
 
