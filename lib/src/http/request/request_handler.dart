@@ -1,6 +1,10 @@
 import 'dart:io';
+import 'dart:math';
 import 'package:vania/src/config/http_cors.dart';
+import 'package:vania/src/exception/internal_server_error.dart';
 import 'package:vania/src/exception/invalid_argument_exception.dart';
+import 'package:vania/src/exception/not_found_exception.dart';
+import 'package:vania/src/exception/unauthenticated.dart';
 import 'package:vania/src/http/controller/controller_handler.dart';
 import 'package:vania/src/http/middleware/middleware_handler.dart';
 import 'package:vania/src/route/route_data.dart';
@@ -52,9 +56,26 @@ Future httpRequestHandler(HttpRequest req) async {
         request: request,
       );
     } on BaseHttpResponseException catch (error) {
+      bool isHtml = req.headers.value('accept').toString().contains('html');
+      if (error is NotFoundException && isHtml) {
+        if (File('lib/view/template/errors/404.html').existsSync()) {
+          return view('errors/404').makeResponse(req.response);
+        }
+      }
+
+      if (error is InternalServerError && isHtml) {
+        if (File('lib/view/template/errors/500.html').existsSync()) {
+          return view('errors/500').makeResponse(req.response);
+        }
+      }
+
+      if (error is Unauthenticated && isHtml) {
+        return Response.redirect(error.message).makeResponse(req.response);
+      }
+
       error
           .response(
-            req.headers.value('accept').toString().contains('html'),
+            isHtml,
           )
           .makeResponse(req.response);
     } on InvalidArgumentException catch (e) {
