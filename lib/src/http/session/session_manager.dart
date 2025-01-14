@@ -13,6 +13,10 @@ class SessionManager {
 
   String sessionKey = '${env<String>('APP_NAME', 'Vania')}_session';
 
+  String _csrfToken = '';
+
+  String get csrfToken => _csrfToken;
+
   final Duration _sessionLifeTime =
       Duration(seconds: env<int>('SESSION_LIFETIME', 9000));
   bool secureSession = env<bool>('SECURE_SESSION', true);
@@ -53,6 +57,7 @@ class SessionManager {
       orElse: () => Cookie('XSRF-TOKEN', ''),
     );
     String token = cookie.value;
+    _csrfToken = token;
     if (cookie.value.isEmpty) {
       token = randomString(length: 64, numbers: true);
       String iv = randomString(length: 32, numbers: true);
@@ -60,17 +65,21 @@ class SessionManager {
 
       await setSession('x_csrf_token_iv', iv);
       await setSession('x_csrf_token', token);
+      _csrfToken = token;
       token = Hash().make(token);
     }
 
+    token = base64Url.encode(utf8.encode(token));
     response.cookies.add(
-      Cookie('XSRF-TOKEN', base64Url.encode(utf8.encode(token)))
+      Cookie('XSRF-TOKEN', token)
         ..expires = DateTime.now().add(Duration(seconds: 9000))
         ..sameSite = SameSite.lax
         ..secure = secureSession
         ..path = '/'
         ..httpOnly = true,
     );
+
+    
   }
 
   /// Starts a new session or retrieves an existing session from the request.
