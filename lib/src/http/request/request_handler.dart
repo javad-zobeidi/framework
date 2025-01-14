@@ -25,7 +25,7 @@ import '../session/session_manager.dart';
 /// - [InvalidArgumentException] if an invalid argument is encountered.
 
 Future httpRequestHandler(HttpRequest req) async {
-  SessionManager().sessionStart(req, req.response);
+  await SessionManager().sessionStart(req, req.response);
 
   /// Check the incoming request is web socket or not
   if (env<bool>('APP_WEBSOCKET', false) &&
