@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:vania/src/exception/page_expired_exception.dart';
 import 'package:vania/vania.dart';
 
@@ -25,20 +27,19 @@ class CsrfMiddleware extends Middleware {
       List<String> csrfExcept = ['api/*'];
       csrfExcept.addAll(Config().get('csrf_except') ?? []);
       if (!_isUrlExcluded(req.uri.path, csrfExcept)) {
-        final csrfToken = req.cookie('XSRF-TOKEN');
+        final csrfToken = _fixBase64Padding(req.cookie('XSRF-TOKEN'));
         String? token = req.input('_csrf');
         token ??= req.input('_token');
         token ??= req.header('X-CSRF-TOKEN');
+
         if (token == null) {
           throw PageExpiredException();
         }
 
         String storedToken = await getSession<String?>('x_csrf_token') ?? '';
-
         if (storedToken != token) {
           throw PageExpiredException();
         }
-
         String iv = await getSession<String?>('x_csrf_token_iv') ?? '';
         Hash().setHashKey(iv);
         if (!Hash().verify(token, csrfToken)) {
@@ -46,6 +47,13 @@ class CsrfMiddleware extends Middleware {
         }
       }
     }
+  }
+
+  String _fixBase64Padding(String value) {
+    while (value.length % 4 != 0) {
+      value += '=';
+    }
+    return utf8.decode(base64Url.decode(value));
   }
 
   /// Check if the given path is excluded from CSRF validation by checking if it
