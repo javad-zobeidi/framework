@@ -59,7 +59,7 @@ class SessionManager {
     String token = cookie.value;
     _csrfToken = token;
     if (cookie.value.isEmpty) {
-      token = randomString(length: 64, numbers: true);
+      token = randomString(length: 40, numbers: true);
       String iv = randomString(length: 32, numbers: true);
       Hash().setHashKey(iv);
 
@@ -78,8 +78,6 @@ class SessionManager {
         ..path = '/'
         ..httpOnly = true,
     );
-
-    
   }
 
   /// Starts a new session or retrieves an existing session from the request.
