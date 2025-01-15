@@ -27,7 +27,10 @@ class CsrfMiddleware extends Middleware {
       List<String> csrfExcept = ['api/*'];
       csrfExcept.addAll(Config().get('csrf_except') ?? []);
       if (!_isUrlExcluded(req.uri.path, csrfExcept)) {
-        final csrfToken = _fixBase64Padding(req.cookie('XSRF-TOKEN'));
+        String csrfToken = req.cookie('XSRF-TOKEN') ?? '';
+        if (csrfToken.isNotEmpty) {
+          csrfToken = _fixBase64Padding(csrfToken);
+        }
         String? token = req.input('_csrf');
         token ??= req.input('_token');
         token ??= req.header('X-CSRF-TOKEN');
