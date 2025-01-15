@@ -1,8 +1,8 @@
 import 'dart:io';
-import 'dart:math';
 import 'package:vania/src/config/http_cors.dart';
 import 'package:vania/src/exception/internal_server_error.dart';
 import 'package:vania/src/exception/invalid_argument_exception.dart';
+import 'package:vania/src/exception/page_expired_exception.dart';
 import 'package:vania/src/exception/not_found_exception.dart';
 import 'package:vania/src/exception/unauthenticated.dart';
 import 'package:vania/src/http/controller/controller_handler.dart';
@@ -24,9 +24,8 @@ import '../session/session_manager.dart';
 /// Throws:
 /// - [BaseHttpResponseException] if there is an issue with the HTTP response.
 /// - [InvalidArgumentException] if an invalid argument is encountered.
-
 Future httpRequestHandler(HttpRequest req) async {
-  SessionManager().sessionStart(req, req.response);
+  await SessionManager().sessionStart(req, req.response);
 
   /// Check the incoming request is web socket or not
   if (env<bool>('APP_WEBSOCKET', false) &&
@@ -66,6 +65,12 @@ Future httpRequestHandler(HttpRequest req) async {
       if (error is InternalServerError && isHtml) {
         if (File('lib/view/template/errors/500.html').existsSync()) {
           return view('errors/500').makeResponse(req.response);
+        }
+      }
+
+      if (error is PageExpiredException && isHtml) {
+        if (File('lib/view/template/errors/419.html').existsSync()) {
+          return view('errors/419').makeResponse(req.response);
         }
       }
 

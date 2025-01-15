@@ -1,0 +1,88 @@
+import 'dart:convert';
+
+import 'package:vania/src/exception/page_expired_exception.dart';
+import 'package:vania/vania.dart';
+
+import 'dart:async';
+
+class CsrfMiddleware extends Middleware {
+  /// This middleware is used to verify the CSRF token in the request.
+  ///
+  /// The middleware checks if the request method is GET or HEAD, if not then it
+  /// checks if the request URI is in the list of excluded paths from the CSRF
+  /// validation.
+  ///
+  /// If the request URI is not in the excluded list, then it checks if the
+  /// _csrf or _token input field is present in the request, if not then it
+  /// throws a PageExpiredException.
+  ///
+  /// If the token is present, then it verifies the token with the stored token
+  /// in the session, if the verification fails then it throws a
+  /// PageExpiredException.
+  ///
+  @override
+  Future<void> handle(Request req) async {
+    if (req.method!.toLowerCase() != 'get' &&
+        req.method!.toLowerCase() != 'head') {
+      List<String> csrfExcept = ['api/*'];
+      csrfExcept.addAll(Config().get('csrf_except') ?? []);
+      if (!_isUrlExcluded(req.uri.path, csrfExcept)) {
+        final csrfToken = _fixBase64Padding(req.cookie('XSRF-TOKEN'));
+        String? token = req.input('_csrf');
+        token ??= req.input('_token');
+        token ??= req.header('X-CSRF-TOKEN');
+
+        if (token == null) {
+          throw PageExpiredException();
+        }
+
+        String storedToken = await getSession<String?>('x_csrf_token') ?? '';
+        if (storedToken != token) {
+          throw PageExpiredException();
+        }
+        String iv = await getSession<String?>('x_csrf_token_iv') ?? '';
+        Hash().setHashKey(iv);
+        if (!Hash().verify(token, csrfToken)) {
+          throw PageExpiredException();
+        }
+      }
+    }
+  }
+
+  String _fixBase64Padding(String value) {
+    while (value.length % 4 != 0) {
+      value += '=';
+    }
+    return utf8.decode(base64Url.decode(value));
+  }
+
+  /// Check if the given path is excluded from CSRF validation by checking if it
+  /// matches any of the patterns in the given list.
+  ///
+  /// The list of patterns can contain simple strings or strings with a wildcard
+  /// at the end (e.g. 'api/*'). If the path matches a pattern with a wildcard
+  /// then it is considered excluded.
+  ///
+  /// The path is considered excluded if it starts with the pattern without the
+  /// wildcard or if it matches the regular expression created by replacing the
+  /// wildcard with '.*'.
+  ///
+  /// For example, if the pattern is 'api/*' then the path will be considered
+  /// excluded if it starts with '/api/' or if it matches the regular expression
+  /// '^/api/.*$'.
+  ///
+  bool _isUrlExcluded(String path, List<String> csrfExcept) {
+    for (var pattern in csrfExcept) {
+      if (pattern.contains('/*')) {
+        final regexPattern = '^/${pattern.replaceAll('/*', '/.*')}\$';
+        final regex = RegExp(regexPattern);
+        if (regex.hasMatch(path)) {
+          return true;
+        }
+      } else if (path.startsWith('/$pattern')) {
+        return true;
+      }
+    }
+    return false;
+  }
+}

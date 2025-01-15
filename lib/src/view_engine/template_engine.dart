@@ -1,6 +1,8 @@
 import 'package:vania/src/view_engine/processor_engine/abs_processor.dart';
 import 'package:vania/src/view_engine/processor_engine/variables_processor.dart';
 
+import 'processor_engine/csrf_processor.dart';
+import 'processor_engine/csrf_token_processor.dart';
 import 'processor_engine/if_statement_processor.dart';
 import 'processor_engine/extends_processor.dart';
 import 'processor_engine/for_loop_processor.dart';
@@ -32,6 +34,8 @@ class TemplateEngine {
   final ForLoopProcessor _forLoopProcessor = ForLoopProcessor();
   final IncludeProcessor _includeProcessor = IncludeProcessor();
   final ExtendsProcessor _extendsProcessor = ExtendsProcessor();
+  final CsrfProcessor _csrfProcessor = CsrfProcessor();
+  final CsrfTokenProcessor _csrfTokenProcessor = CsrfTokenProcessor();
   final SectionProcessor _sectionProcessor = SectionProcessor();
 
   String render(String template, [Map<String, dynamic>? data]) {
@@ -69,6 +73,8 @@ class TemplateEngine {
       _switchCaseProcess,
       _conditionalProcess,
       _variablesProcess,
+      _csrfProcessor,
+      _csrfTokenProcessor,
     ]);
 
     final renderedContent = pipeline.run(templateContent, data);
