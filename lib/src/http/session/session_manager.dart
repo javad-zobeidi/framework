@@ -57,21 +57,24 @@ class SessionManager {
       orElse: () => Cookie('XSRF-TOKEN', ''),
     );
     String token = cookie.value;
-    _csrfToken = token;
-    if (cookie.value.isEmpty) {
-      token = randomString(length: 40, numbers: true);
-      String iv = randomString(length: 32, numbers: true);
-      Hash().setHashKey(iv);
+    String? storedToken = await getSession<String?>('x_csrf_token');
 
-      await setSession('x_csrf_token_iv', iv);
-      await setSession('x_csrf_token', token);
-      _csrfToken = token;
-      token = Hash().make(token);
+    if (token.isEmpty || storedToken == null) {
+      await generateNewToken(response);
     }
+  }
 
-    token = base64Url.encode(utf8.encode(token));
+  Future<void> generateNewToken(HttpResponse response) async {
+    String token = randomString(length: 40, numbers: true);
+    String iv = randomString(length: 32, numbers: true);
+    Hash().setHashKey(iv);
+
+    await setSession('x_csrf_token_iv', iv);
+    await setSession('x_csrf_token', token);
+    _csrfToken = token;
+    token = Hash().make(token);
     response.cookies.add(
-      Cookie('XSRF-TOKEN', token)
+      Cookie('XSRF-TOKEN', base64Url.encode(utf8.encode(token)))
         ..expires = DateTime.now().add(Duration(seconds: 9000))
         ..sameSite = SameSite.lax
         ..secure = secureSession
@@ -103,12 +106,13 @@ class SessionManager {
     HttpResponse response,
   ) async {
     _request = null;
-
+    _request ??= request;
     final cookie = request.cookies.firstWhere(
       (c) => c.name == sessionKey,
       orElse: () => Cookie(sessionKey, _generateSessionId()),
     );
     String sessionId = cookie.value;
+
     response.cookies.add(
       Cookie(sessionKey, sessionId)
         ..httpOnly = true
@@ -118,9 +122,17 @@ class SessionManager {
         ..expires = DateTime.now().add(_sessionLifeTime),
     );
 
-    await createXsrfToken(request, response);
+    _request?.cookies.add(
+      Cookie(sessionKey, sessionId)
+        ..httpOnly = true
+        ..secure = secureSession
+        ..path = '/'
+        ..sameSite = SameSite.lax
+        ..expires = DateTime.now().add(_sessionLifeTime),
+    );
 
-    _request ??= request;
+    _csrfToken = await getSession<String?>('x_csrf_token') ?? '';
+    await createXsrfToken(request, response);
   }
 
   String? getSessionId() {
@@ -205,7 +217,7 @@ class SessionManager {
   /// Parameters:
   /// - [key]: The key to be deleted from the session data.
   Future<void> deleteSession(String key) async {
-    final sessionId = getSessionId();
+    final String? sessionId = getSessionId();
     if (sessionId != null) {
       Map<String, dynamic> session =
           await SessionFileStore().retrieveSession(sessionId) ?? {};
