@@ -39,6 +39,16 @@ class Request {
   Map<String, dynamic> body = <String, dynamic>{};
   final Map<String, dynamic> _cookies = <String, dynamic>{};
 
+  /// Gets a cookie by name and casts it to type [T].
+  ///
+  /// If the cookie doesn't exist, it returns `null`.
+  ///
+  /// If [T] is [String], it's casted to a string.
+  /// If [T] is [bool], it's parsed from a string.
+  /// If [T] is [int], it's parsed from a string.
+  /// If [T] is [double], it's parsed from a string.
+  /// Otherwise, it's casted to [T].
+  ///
   T? cookie<T>(String key) {
     if (_cookies[key] == null) return null;
     return switch (T.toString()) {
@@ -50,6 +60,9 @@ class Request {
     };
   }
 
+  /// Extracts the cookies from the headers and stores them in [_cookies].
+  ///
+  /// The format of the [HttpHeaders.cookieHeader] is:
   void _extractCookies() {
     List<String>? cookies = _httpHeaders[HttpHeaders.cookieHeader];
     if (cookies == null) {

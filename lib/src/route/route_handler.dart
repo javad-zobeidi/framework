@@ -8,7 +8,13 @@ import 'package:vania/vania.dart';
 
 RouteData? httpRouteHandler(HttpRequest req) {
   final route = _getMatchRoute(
-    Uri.decodeComponent(req.uri.path.toLowerCase()),
+    Uri.decodeComponent(
+      Uri.parse(
+        sanitizeRoutePath(
+          req.uri.toString(),
+        ),
+      ).path.toLowerCase(),
+    ),
     req.method,
     req.headers.value(HttpHeaders.hostHeader),
   );
@@ -19,22 +25,11 @@ RouteData? httpRouteHandler(HttpRequest req) {
       return null;
     } else {
       final isFile = setStaticPath(req);
-      if (isFile == null) {
-        if (!req.headers.value('accept').toString().contains('html')) {
-          throw NotFoundException(
-            message: {'message': 'Not found'},
-            responseType: ResponseType.json,
-          );
-        } else {
-          Directory errorsDirectory = Directory('errors');
-          if (errorsDirectory.existsSync()) {
-            File errorFile = File('errors/404.html');
-            if (errorFile.existsSync()) {
-              throw NotFoundException(message: errorFile.readAsStringSync());
-            }
-          }
-          throw NotFoundException();
-        }
+      if (!isFile) {
+        throw NotFoundException(
+          message: {'message': 'Not found'},
+          responseType: ResponseType.json,
+        );
       }
     }
   }
@@ -114,9 +109,8 @@ RouteData? _getMatchRoute(String inputRoute, String method, String? domain) {
       domainParameter = subDomain.split('.').first.toLowerCase();
     }
 
-    route.path = sanitizeRoutePath(route.path.toLowerCase());
+    String routePath = sanitizeRoutePath(route.path.trim().toLowerCase());
     inputRoute = sanitizeRoutePath(inputRoute.toLowerCase());
-    String routePath = route.path.trim();
 
     /// When route is the same route exactly same route.
     /// route without params, eg. /api/example

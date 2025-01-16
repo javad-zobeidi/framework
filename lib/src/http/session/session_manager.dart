@@ -67,12 +67,10 @@ class SessionManager {
   Future<void> generateNewToken(HttpResponse response) async {
     String token = randomString(length: 40, numbers: true);
     String iv = randomString(length: 32, numbers: true);
-    Hash().setHashKey(iv);
-
     await setSession('x_csrf_token_iv', iv);
     await setSession('x_csrf_token', token);
     _csrfToken = token;
-    token = Hash().make(token);
+    token = Hash().setHashKey(iv).make(token);
     response.cookies.add(
       Cookie('XSRF-TOKEN', base64Url.encode(utf8.encode(token)))
         ..expires = DateTime.now().add(Duration(seconds: 9000))
