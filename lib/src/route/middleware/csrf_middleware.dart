@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:vania/src/exception/page_expired_exception.dart';
+import 'package:vania/src/utils/functions.dart';
 import 'package:vania/vania.dart';
 
 import 'dart:async';
@@ -8,8 +9,8 @@ import 'dart:async';
 class CsrfMiddleware extends Middleware {
   /// This middleware is used to verify the CSRF token in the request.
   ///
-  /// The middleware checks if the request method is GET or HEAD, if not then it
-  /// checks if the request URI is in the list of excluded paths from the CSRF
+  /// The middleware checks if the request method is one of the [POST],[PUT],[Patch]
+  /// and checks if the request URI is not in the list of excluded paths from the CSRF
   /// validation.
   ///
   /// If the request URI is not in the excluded list, then it checks if the
@@ -22,11 +23,19 @@ class CsrfMiddleware extends Middleware {
   ///
   @override
   Future<void> handle(Request req) async {
-    if (req.method!.toLowerCase() != 'get' &&
-        req.method!.toLowerCase() != 'head') {
+    if (req.method!.toLowerCase() == 'post' ||
+        req.method!.toLowerCase() == 'put' ||
+        req.method!.toLowerCase() == 'patch') {
       List<String> csrfExcept = ['api/*'];
       csrfExcept.addAll(Config().get('csrf_except') ?? []);
-      if (!_isUrlExcluded(req.uri.path, csrfExcept)) {
+
+      String uri = Uri.parse(
+        sanitizeRoutePath(
+          req.uri.toString(),
+        ),
+      ).path.toLowerCase();
+
+      if (!_isUrlExcluded(uri, csrfExcept)) {
         String csrfToken = req.cookie('XSRF-TOKEN') ?? '';
         if (csrfToken.isNotEmpty) {
           csrfToken = _fixBase64Padding(csrfToken);
@@ -44,8 +53,7 @@ class CsrfMiddleware extends Middleware {
           throw PageExpiredException();
         }
         String iv = await getSession<String?>('x_csrf_token_iv') ?? '';
-        Hash().setHashKey(iv);
-        if (!Hash().verify(token, csrfToken)) {
+        if (!Hash().setHashKey(iv).verify(token, csrfToken)) {
           throw PageExpiredException();
         }
       }
@@ -76,13 +84,16 @@ class CsrfMiddleware extends Middleware {
   ///
   bool _isUrlExcluded(String path, List<String> csrfExcept) {
     for (var pattern in csrfExcept) {
-      if (pattern.contains('/*')) {
-        final regexPattern = '^/${pattern.replaceAll('/*', '/.*')}\$';
+      if (pattern.toLowerCase().contains('/*')) {
+        final regexPattern =
+            '^/${pattern.toLowerCase().replaceAll('/*', '/.*')}\$';
         final regex = RegExp(regexPattern);
         if (regex.hasMatch(path)) {
           return true;
         }
-      } else if (path.startsWith('/$pattern')) {
+      } else if (path.startsWith(
+        '/${pattern.replaceFirst('/', '').toLowerCase()}',
+      )) {
         return true;
       }
     }
