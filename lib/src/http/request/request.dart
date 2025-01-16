@@ -14,7 +14,7 @@ class Request {
 
   Map? get user => Auth().user();
 
-  String? get remoteIp => request.connectionInfo?.remoteAddress.address;
+  String? get ip => request.connectionInfo?.remoteAddress.address;
 
   HttpHeaders get _httpHeaders => request.headers;
 
@@ -86,24 +86,6 @@ class Request {
       body = await RequestBody.extractBody(request: request);
     }
     return this;
-  }
-
-  /// Gets the IP address of the request.
-  ///
-  /// It first checks if the request contains the `X-Real-IP` header.
-  ///
-  /// If it doesn't, it checks if the `X-Forwarded-For` header is present.
-  ///
-  /// If both headers are not present, it returns `'unknown'`.
-  String ip() {
-    String? clientIp = headers['X-Real-IP'];
-    if (clientIp == null || clientIp.isEmpty) {
-      clientIp = headers['X-Forwarded-For'];
-      if (clientIp != null && clientIp.isNotEmpty) {
-        clientIp = clientIp.split(',').first.trim();
-      }
-    }
-    return (clientIp != null && clientIp.isNotEmpty) ? clientIp : 'unknown';
   }
 
   Map<String, dynamic> all() {
