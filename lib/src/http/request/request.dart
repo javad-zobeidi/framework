@@ -14,7 +14,7 @@ class Request {
 
   Map? get user => Auth().user();
 
-  String? get ip => request.connectionInfo?.remoteAddress.address;
+  String? get remoteIp => request.connectionInfo?.remoteAddress.address;
 
   HttpHeaders get _httpHeaders => request.headers;
 
@@ -39,6 +39,16 @@ class Request {
   Map<String, dynamic> body = <String, dynamic>{};
   final Map<String, dynamic> _cookies = <String, dynamic>{};
 
+  /// Gets a cookie by name and casts it to type [T].
+  ///
+  /// If the cookie doesn't exist, it returns `null`.
+  ///
+  /// If [T] is [String], it's casted to a string.
+  /// If [T] is [bool], it's parsed from a string.
+  /// If [T] is [int], it's parsed from a string.
+  /// If [T] is [double], it's parsed from a string.
+  /// Otherwise, it's casted to [T].
+  ///
   T? cookie<T>(String key) {
     if (_cookies[key] == null) return null;
     return switch (T.toString()) {
@@ -50,6 +60,9 @@ class Request {
     };
   }
 
+  /// Extracts the cookies from the headers and stores them in [_cookies].
+  ///
+  /// The format of the [HttpHeaders.cookieHeader] is:
   void _extractCookies() {
     List<String>? cookies = _httpHeaders[HttpHeaders.cookieHeader];
     if (cookies == null) {
@@ -73,6 +86,24 @@ class Request {
       body = await RequestBody.extractBody(request: request);
     }
     return this;
+  }
+
+  /// Gets the IP address of the request.
+  ///
+  /// It first checks if the request contains the `X-Real-IP` header.
+  ///
+  /// If it doesn't, it checks if the `X-Forwarded-For` header is present.
+  ///
+  /// If both headers are not present, it returns `'unknown'`.
+  String ip() {
+    String? clientIp = headers['X-Real-IP'];
+    if (clientIp == null || clientIp.isEmpty) {
+      clientIp = headers['X-Forwarded-For'];
+      if (clientIp != null && clientIp.isNotEmpty) {
+        clientIp = clientIp.split(',').first.trim();
+      }
+    }
+    return (clientIp != null && clientIp.isNotEmpty) ? clientIp : 'unknown';
   }
 
   Map<String, dynamic> all() {
