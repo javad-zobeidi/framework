@@ -1,6 +1,5 @@
 import 'package:vania/src/view_engine/processor_engine/abs_processor.dart';
 import 'package:vania/src/view_engine/processor_engine/variables_processor.dart';
-import 'package:vania/vania.dart';
 
 import 'processor_engine/csrf_processor.dart';
 import 'processor_engine/csrf_token_processor.dart';
@@ -11,6 +10,7 @@ import 'processor_engine/for_loop_processor.dart';
 import 'processor_engine/include_processor.dart';
 import 'processor_engine/old_processor.dart';
 import 'processor_engine/section_processor.dart';
+import 'processor_engine/session_processor.dart';
 import 'processor_engine/switch_cases_processor.dart';
 import 'template_reader.dart';
 
@@ -40,19 +40,22 @@ class TemplateEngine {
   final ExtendsProcessor _extendsProcessor = ExtendsProcessor();
   final CsrfProcessor _csrfProcessor = CsrfProcessor();
   final CsrfTokenProcessor _csrfTokenProcessor = CsrfTokenProcessor();
-  final ErrorProcessor _hasErrorProcessor = ErrorProcessor();
+  final ErrorProcessor _errorProcessor = ErrorProcessor();
   final SectionProcessor _sectionProcessor = SectionProcessor();
   final OldProcessor _oldProcessor = OldProcessor();
+  final SessionProcessor _sessionProcessor = SessionProcessor();
 
   final Map<String, dynamic> sessionErrors = {};
   final Map<String, dynamic> formData = {};
+  final Map<String, dynamic> sessions = {};
 
   String render(String template, [Map<String, dynamic>? data]) {
-    String templateContent =
-        renderString(FileTemplateReader().read(template), data);
+    String templateContent = FileTemplateReader().read(template);
+    String renderedTemplate = renderString(templateContent, data);
     sessionErrors.clear();
     formData.clear();
-    return templateContent;
+    sessions.clear();
+    return renderedTemplate;
   }
 
   /// Renders a template string with the provided data context.
@@ -81,7 +84,8 @@ class TemplateEngine {
       _extendsProcessor,
       _includeProcessor,
       _sectionProcessor,
-      _hasErrorProcessor,
+      _errorProcessor,
+      _sessionProcessor,
       _forLoopProcessor,
       _switchCaseProcess,
       _conditionalProcess,

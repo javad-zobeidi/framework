@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:vania/src/exception/validation_exception.dart';
 import 'package:vania/src/route/route_data.dart';
 import 'package:vania/src/route/route_history.dart';
@@ -37,9 +35,7 @@ class ControllerHandler {
         Response.redirect(RouteHistory().previousRoute)
             .makeResponse(request.response);
       } else {
-        error
-            .response(false)
-            .makeResponse(request.response);
+        error.response(false).makeResponse(request.response);
       }
     } catch (error) {
       _response(request, error.toString());
