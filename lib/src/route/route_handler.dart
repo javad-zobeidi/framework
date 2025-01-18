@@ -6,6 +6,20 @@ import 'package:vania/src/route/set_static_path.dart';
 import 'package:vania/src/utils/functions.dart';
 import 'package:vania/vania.dart';
 
+/// Find the matched route from the given request and return the
+/// [RouteData] for the matched route.
+///
+/// The function first checks if the request is an OPTIONS request. If it is,
+/// the request is closed and null is returned. If the request is not an
+/// OPTIONS request, the function checks if the request path matches a static
+/// file. If it does, the function returns null. If it doesn't, the function
+/// throws a [NotFoundException].
+///
+/// If the request is not an OPTIONS request and the request path doesn't match
+/// a static file, the function returns the matched [RouteData].
+///
+/// Throws a [NotFoundException] if the request is not an OPTIONS request and
+/// the request path doesn't match a static file.
 RouteData? httpRouteHandler(HttpRequest req) {
   final route = _getMatchRoute(
     Uri.decodeComponent(
@@ -36,7 +50,6 @@ RouteData? httpRouteHandler(HttpRequest req) {
   return route;
 }
 
-/// Exctract the domain from the url
 String _extractDomain(String domain, String path) {
   String firstPart = domain.split('.').first.toLowerCase();
   final RegExp domainRegex = RegExp(r'\{[^}]*\}');
@@ -48,8 +61,6 @@ String _extractDomain(String domain, String path) {
   return domainUri;
 }
 
-/// Exctarct username from {username}
-/// Or any string between {}
 String? _extractDomainPlaceholder(String input) {
   final RegExp regex = RegExp(r'\{([^}]*)\}');
   final match = regex.firstMatch(input);

@@ -9,6 +9,8 @@ import 'package:vania/src/http/controller/controller_handler.dart';
 import 'package:vania/src/http/middleware/middleware_handler.dart';
 import 'package:vania/src/route/route_data.dart';
 import 'package:vania/src/route/route_handler.dart';
+import 'package:vania/src/route/route_history.dart';
+import 'package:vania/src/view_engine/template_engine.dart';
 import 'package:vania/src/websocket/web_socket_handler.dart';
 import 'package:vania/vania.dart';
 
@@ -36,6 +38,8 @@ Future httpRequestHandler(HttpRequest req) async {
     String requestUri = req.uri.path;
     String starteRequest = startTime.format();
 
+    bool isHtml = req.headers.value('accept').toString().contains('html');
+
     try {
       /// Check if cors is enabled
       HttpCors(req);
@@ -43,6 +47,12 @@ Future httpRequestHandler(HttpRequest req) async {
       Request request = Request.from(request: req, route: route);
       await request.extractBody();
       if (route == null) return;
+
+      RouteHistory().updateRouteHistory(req);
+
+      if (isHtml) {
+        TemplateEngine().formData.addAll(request.all());
+      }
 
       /// check if pre middleware exist and call it
       if (route.preMiddleware.isNotEmpty) {
@@ -55,7 +65,6 @@ Future httpRequestHandler(HttpRequest req) async {
         request: request,
       );
     } on BaseHttpResponseException catch (error) {
-      bool isHtml = req.headers.value('accept').toString().contains('html');
       if (error is NotFoundException && isHtml) {
         if (File('lib/view/template/errors/404.html').existsSync()) {
           return view('errors/404').makeResponse(req.response);
