@@ -3,6 +3,8 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:meta/meta.dart';
 import 'package:vania/src/http/response/stream_file.dart';
+import 'package:vania/src/route/route_history.dart';
+import 'package:vania/src/utils/helper.dart';
 
 enum ResponseType {
   json,
@@ -191,4 +193,23 @@ class Response {
         responseType: ResponseType.download,
         headers: headers,
       );
+
+  static back([String? key, String? message]) async {
+    String previousRoute = RouteHistory().previousRoute;
+    if (previousRoute.isNotEmpty) {
+      if (key != null && message != null) {
+        await setSession(key, message);
+      }
+      return Response(
+        responseType: ResponseType.redirect,
+        data: previousRoute,
+        httpStatusCode: HttpStatus.found,
+      );
+    }
+    return Response(
+      responseType: ResponseType.redirect,
+      data: RouteHistory().currentRoute,
+      httpStatusCode: HttpStatus.found,
+    );
+  }
 }
