@@ -4,6 +4,7 @@ import 'package:vania/src/exception/validation_exception.dart';
 import 'package:vania/src/http/request/request_body.dart';
 import 'package:vania/src/http/validation/validator.dart';
 import 'package:vania/src/route/route_data.dart';
+import 'package:vania/src/view_engine/template_engine.dart';
 import 'package:vania/vania.dart';
 
 class Request {
@@ -321,6 +322,7 @@ class Request {
       [Map<String, String> messages = const <String, String>{}]) {
     assert(rules is Map<String, String> || rules is List<Validation>,
         'Rules must be either Map<String, String> or List<Validation>.');
+    TemplateEngine().sessionErrors.clear();
     if (rules is Map<String, String>) {
       _validate(rules, messages);
     } else {
@@ -336,6 +338,10 @@ class Request {
     }
     validator.validate(rules);
     if (validator.hasError) {
+      bool isHtml = request.headers.value('accept').toString().contains('html');
+      if (isHtml) {
+        TemplateEngine().sessionErrors.addAll(validator.errors);
+      }
       throw ValidationException(message: validator.errors);
     }
   }
@@ -354,6 +360,10 @@ class Request {
       }
     }
     if (errors.isNotEmpty) {
+      bool isHtml = request.headers.value('accept').toString().contains('html');
+      if (isHtml) {
+        TemplateEngine().sessionErrors.addAll(errors);
+      }
       throw ValidationException(message: errors);
     }
   }
