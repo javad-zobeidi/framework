@@ -25,10 +25,6 @@ class ErrorProcessor extends AbsProcessor {
       return TemplateEngine().sessionErrors[errorKey] ?? '';
     });
 
-    if (errorKey != null) {
-      TemplateEngine().sessionErrors.remove(errorKey);
-    }
-
     return content;
   }
 }

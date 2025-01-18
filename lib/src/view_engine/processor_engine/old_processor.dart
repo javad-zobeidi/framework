@@ -9,15 +9,12 @@ class OldProcessor extends AbsProcessor {
       r"\{@\s*old\(\s*'([^']*)'\s*\)\s*@\}",
       dotAll: true,
     );
-    String? oldKey;
+
     content = content.replaceAllMapped(oldPattern, (oldMatch) {
-      oldKey = oldMatch.group(1);
+      final oldKey = oldMatch.group(1);
       return TemplateEngine().formData[oldKey] ?? '';
     });
 
-    if (oldKey != null) {
-      TemplateEngine().formData.remove(oldKey);
-    }
     return content;
   }
 }

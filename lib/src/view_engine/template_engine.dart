@@ -48,8 +48,11 @@ class TemplateEngine {
   final Map<String, dynamic> formData = {};
 
   String render(String template, [Map<String, dynamic>? data]) {
-    String templateContent = FileTemplateReader().read(template);
-    return renderString(templateContent, data);
+    String templateContent =
+        renderString(FileTemplateReader().read(template), data);
+    sessionErrors.clear();
+    formData.clear();
+    return templateContent;
   }
 
   /// Renders a template string with the provided data context.
