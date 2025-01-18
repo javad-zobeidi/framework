@@ -1,12 +1,15 @@
 import 'package:vania/src/view_engine/processor_engine/abs_processor.dart';
 import 'package:vania/src/view_engine/processor_engine/variables_processor.dart';
+import 'package:vania/vania.dart';
 
 import 'processor_engine/csrf_processor.dart';
 import 'processor_engine/csrf_token_processor.dart';
+import 'processor_engine/error_processor.dart';
 import 'processor_engine/if_statement_processor.dart';
 import 'processor_engine/extends_processor.dart';
 import 'processor_engine/for_loop_processor.dart';
 import 'processor_engine/include_processor.dart';
+import 'processor_engine/old_processor.dart';
 import 'processor_engine/section_processor.dart';
 import 'processor_engine/switch_cases_processor.dart';
 import 'template_reader.dart';
@@ -28,6 +31,7 @@ class TemplateEngine {
   static final TemplateEngine _singleton = TemplateEngine._internal();
   factory TemplateEngine() => _singleton;
   TemplateEngine._internal();
+
   final VariablesProcessor _variablesProcess = VariablesProcessor();
   final IfStatementProcessor _conditionalProcess = IfStatementProcessor();
   final SwitchCasesProcessor _switchCaseProcess = SwitchCasesProcessor();
@@ -36,7 +40,12 @@ class TemplateEngine {
   final ExtendsProcessor _extendsProcessor = ExtendsProcessor();
   final CsrfProcessor _csrfProcessor = CsrfProcessor();
   final CsrfTokenProcessor _csrfTokenProcessor = CsrfTokenProcessor();
+  final ErrorProcessor _hasErrorProcessor = ErrorProcessor();
   final SectionProcessor _sectionProcessor = SectionProcessor();
+  final OldProcessor _oldProcessor = OldProcessor();
+
+  final Map<String, dynamic> sessionErrors = {};
+  final Map<String, dynamic> formData = {};
 
   String render(String template, [Map<String, dynamic>? data]) {
     String templateContent = FileTemplateReader().read(template);
@@ -69,12 +78,14 @@ class TemplateEngine {
       _extendsProcessor,
       _includeProcessor,
       _sectionProcessor,
+      _hasErrorProcessor,
       _forLoopProcessor,
       _switchCaseProcess,
       _conditionalProcess,
       _variablesProcess,
       _csrfProcessor,
       _csrfTokenProcessor,
+      _oldProcessor
     ]);
 
     final renderedContent = pipeline.run(templateContent, data);
