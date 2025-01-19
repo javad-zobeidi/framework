@@ -88,13 +88,12 @@ class Auth {
   /// function does not return anything.
   Future<void> _updateSession() async {
     await setSession('logged_in', true);
-
-    if (await getSession<Map?>('auth_user') != _user) {
+    await setSession('auth_guard', _userGuard);
+    Map<String, dynamic> user =
+        await getSession<Map<String, dynamic>?>('auth_user') ?? {};
+    if (_user != user) {
+      await deleteSession('auth_user');
       await setSession('auth_user', _user);
-    }
-
-    if (await getSession<String?>('auth_guard') != _userGuard) {
-      await setSession('auth_guard', _userGuard);
     }
 
     _loggedIn = true;
