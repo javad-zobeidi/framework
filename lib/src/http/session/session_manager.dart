@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:crypto/crypto.dart';
 import 'package:vania/src/utils/functions.dart';
 import 'package:vania/vania.dart';
 import 'session_file_store.dart';
@@ -57,9 +58,10 @@ class SessionManager {
       orElse: () => Cookie('XSRF-TOKEN', ''),
     );
     String token = cookie.value;
-    String? storedToken = await getSession<String?>('x_csrf_token');
+    _csrfToken = await getSession<String?>('x_csrf_token') ?? '';
+    String iv = await getSession<String?>('x_csrf_token_iv') ?? '';
 
-    if (token.isEmpty || storedToken == null) {
+    if (token.isEmpty || _csrfToken.isEmpty || iv.isEmpty) {
       await generateNewToken(response);
     }
   }
@@ -70,9 +72,10 @@ class SessionManager {
     await setSession('x_csrf_token_iv', iv);
     await setSession('x_csrf_token', token);
     _csrfToken = token;
-    token = Hash().setHashKey(iv).make(token);
+    var hmac = Hmac(sha512, utf8.encode(iv));
+    final Digest hash = hmac.convert(utf8.encode(token));
     response.cookies.add(
-      Cookie('XSRF-TOKEN', base64Url.encode(utf8.encode(token)))
+      Cookie('XSRF-TOKEN', base64.encode(hash.bytes))
         ..expires = DateTime.now().add(Duration(seconds: 9000))
         ..sameSite = SameSite.lax
         ..secure = secureSession
@@ -129,7 +132,6 @@ class SessionManager {
         ..expires = DateTime.now().add(_sessionLifeTime),
     );
 
-    _csrfToken = await getSession<String?>('x_csrf_token') ?? '';
     await createXsrfToken(request, response);
   }
 
@@ -198,9 +200,13 @@ class SessionManager {
   Future<void> setSession(String key, dynamic value) async {
     final sessionId = getSessionId();
     if (sessionId != null) {
-      Map<String, dynamic> session =
-          await SessionFileStore().retrieveSession(sessionId) ?? {};
-      session.addAll({key: value});
+      Map<String, dynamic>? session =
+          await SessionFileStore().retrieveSession(sessionId);
+      if (session != null) {
+        session.addEntries([MapEntry(key, value)]);
+      } else {
+        session = {key: value};
+      }
       await SessionFileStore().storeSession(sessionId, session);
     }
   }
@@ -217,10 +223,12 @@ class SessionManager {
   Future<void> deleteSession(String key) async {
     final String? sessionId = getSessionId();
     if (sessionId != null) {
-      Map<String, dynamic> session =
-          await SessionFileStore().retrieveSession(sessionId) ?? {};
-      session.remove(key);
-      await SessionFileStore().storeSession(sessionId, session);
+      Map<String, dynamic>? session =
+          await SessionFileStore().retrieveSession(sessionId);
+      if (session != null) {
+        session.remove(key);
+        await SessionFileStore().storeSession(sessionId, session);
+      }
     }
   }
 

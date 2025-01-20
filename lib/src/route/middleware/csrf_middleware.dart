@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:crypto/crypto.dart';
 import 'package:vania/src/exception/page_expired_exception.dart';
 import 'package:vania/src/utils/functions.dart';
 import 'package:vania/vania.dart';
@@ -53,7 +54,9 @@ class CsrfMiddleware extends Middleware {
           throw PageExpiredException();
         }
         String iv = await getSession<String?>('x_csrf_token_iv') ?? '';
-        if (!Hash().setHashKey(iv).verify(token, csrfToken)) {
+        var hmac = Hmac(sha512, utf8.encode(iv));
+        final Digest hash = hmac.convert(utf8.encode(token));
+        if (base64.encode(hash.bytes) != csrfToken) {
           throw PageExpiredException();
         }
       }
@@ -64,7 +67,7 @@ class CsrfMiddleware extends Middleware {
     while (value.length % 4 != 0) {
       value += '=';
     }
-    return utf8.decode(base64Url.decode(value));
+    return value;
   }
 
   /// Check if the given path is excluded from CSRF validation by checking if it

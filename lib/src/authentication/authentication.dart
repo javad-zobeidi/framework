@@ -57,16 +57,18 @@ class Auth {
   /// current guard.
   ///
   /// Returns the current instance of the `Auth` class.
-  Auth login(Map<String, dynamic> user) {
+  Auth login(Map<String, dynamic> user, [bool basic = false]) {
     _user[_userGuard] = user;
-    _updateSession();
+    if (basic) {
+      _updateSession();
+    }
     return this;
   }
 
   Future<void> logout() async {
-    await setSession('logged_in', false);
-    await setSession('auth_user', null);
-    await setSession('auth_guard', null);
+    await deleteSession('logged_in');
+    await deleteSession('auth_guard');
+    await deleteSession('auth_user');
     _loggedIn = false;
     if (_currentToken.isNotEmpty) {
       try {
@@ -88,13 +90,12 @@ class Auth {
   /// function does not return anything.
   Future<void> _updateSession() async {
     await setSession('logged_in', true);
-
-    if (await getSession<Map?>('auth_user') != _user) {
+    await setSession('auth_guard', _userGuard);
+    Map<String, dynamic> user =
+        await getSession<Map<String, dynamic>?>('auth_user') ?? {};
+    if (_user != user) {
+      await deleteSession('auth_user');
       await setSession('auth_user', _user);
-    }
-
-    if (await getSession<String?>('auth_guard') != _userGuard) {
-      await setSession('auth_guard', _userGuard);
     }
 
     _loggedIn = true;

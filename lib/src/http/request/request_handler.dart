@@ -27,43 +27,52 @@ import '../session/session_manager.dart';
 /// - [BaseHttpResponseException] if there is an issue with the HTTP response.
 /// - [InvalidArgumentException] if an invalid argument is encountered.
 Future httpRequestHandler(HttpRequest req) async {
-  await SessionManager().sessionStart(req, req.response);
-
   /// Check the incoming request is web socket or not
   if (env<bool>('APP_WEBSOCKET', false) &&
       WebSocketTransformer.isUpgradeRequest(req)) {
+    await SessionManager().sessionStart(req, req.response);
     WebSocketHandler().handler(req);
   } else {
-    DateTime startTime = DateTime.now();
-    String requestUri = req.uri.path;
-    String starteRequest = startTime.format();
-
     bool isHtml = req.headers.value('accept').toString().contains('html');
-
     try {
-      /// Check if cors is enabled
       HttpCors(req);
       RouteData? route = httpRouteHandler(req);
-      Request request = Request.from(request: req, route: route);
-      await request.extractBody();
-      if (route == null) return;
+      DateTime startTime = DateTime.now();
+      String requestUri = req.uri.path;
+      String starteRequest = startTime.format();
 
-      RouteHistory().updateRouteHistory(req);
+      if (route != null) {
+        /// Check if cors is enabled
 
-      if (isHtml) {
-        TemplateEngine().formData.addAll(request.all());
+        Request request = Request.from(request: req, route: route);
+        await request.extractBody();
+
+        if (isHtml) {
+          TemplateEngine().formData.addAll(request.all());
+          await SessionManager().sessionStart(req, req.response);
+          RouteHistory().updateRouteHistory(req);
+        }
+
+        /// check if pre middleware exist and call it
+        if (route.preMiddleware.isNotEmpty) {
+          await middlewareHandler(route.preMiddleware, request);
+        }
+
+        /// Controller and method handler
+        ControllerHandler().create(
+          route: route,
+          request: request,
+        );
+
+        if (env<bool>('APP_DEBUG')) {
+          var endTime = DateTime.now();
+          var duration = endTime.difference(startTime).inMilliseconds;
+          var requestedPath = requestUri.isNotEmpty
+              ? requestUri.padRight(118 - requestUri.length, '.')
+              : ''.padRight(118, '.');
+          print('$starteRequest $requestedPath ~ ${duration}ms');
+        }
       }
-
-      /// check if pre middleware exist and call it
-      if (route.preMiddleware.isNotEmpty) {
-        await middlewareHandler(route.preMiddleware, request);
-      }
-
-      /// Controller and method handler
-      ControllerHandler().create(
-        route: route,
-        request: request,
-      );
     } on BaseHttpResponseException catch (error) {
       if (error is NotFoundException && isHtml) {
         if (File('lib/view/template/errors/404.html').existsSync()) {
@@ -98,15 +107,6 @@ Future httpRequestHandler(HttpRequest req) async {
     } catch (e) {
       Logger.log(e.toString(), type: Logger.ERROR);
       _response(req, e.toString());
-    }
-
-    if (env<bool>('APP_DEBUG')) {
-      var endTime = DateTime.now();
-      var duration = endTime.difference(startTime).inMilliseconds;
-      var requestedPath = requestUri.isNotEmpty
-          ? requestUri.padRight(118 - requestUri.length, '.')
-          : ''.padRight(118, '.');
-      print('$starteRequest $requestedPath ~ ${duration}ms');
     }
   }
 }
