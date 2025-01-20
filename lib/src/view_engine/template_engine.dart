@@ -1,6 +1,7 @@
 import 'package:vania/src/view_engine/processor_engine/abs_processor.dart';
 import 'package:vania/src/view_engine/processor_engine/variables_processor.dart';
 
+import 'processor_engine/comment_processor.dart';
 import 'processor_engine/csrf_processor.dart';
 import 'processor_engine/csrf_token_processor.dart';
 import 'processor_engine/error_processor.dart';
@@ -12,6 +13,7 @@ import 'processor_engine/old_processor.dart';
 import 'processor_engine/section_processor.dart';
 import 'processor_engine/session_processor.dart';
 import 'processor_engine/switch_cases_processor.dart';
+import 'processor_engine/translate_processor.dart';
 import 'template_reader.dart';
 
 class _TemplateProcessingPipeline {
@@ -32,18 +34,7 @@ class TemplateEngine {
   factory TemplateEngine() => _singleton;
   TemplateEngine._internal();
 
-  final VariablesProcessor _variablesProcess = VariablesProcessor();
-  final IfStatementProcessor _conditionalProcess = IfStatementProcessor();
-  final SwitchCasesProcessor _switchCaseProcess = SwitchCasesProcessor();
-  final ForLoopProcessor _forLoopProcessor = ForLoopProcessor();
-  final IncludeProcessor _includeProcessor = IncludeProcessor();
-  final ExtendsProcessor _extendsProcessor = ExtendsProcessor();
-  final CsrfProcessor _csrfProcessor = CsrfProcessor();
-  final CsrfTokenProcessor _csrfTokenProcessor = CsrfTokenProcessor();
-  final ErrorProcessor _errorProcessor = ErrorProcessor();
   final SectionProcessor _sectionProcessor = SectionProcessor();
-  final OldProcessor _oldProcessor = OldProcessor();
-  final SessionProcessor _sessionProcessor = SessionProcessor();
 
   final Map<String, dynamic> sessionErrors = {};
   final Map<String, dynamic> formData = {};
@@ -81,18 +72,20 @@ class TemplateEngine {
     };
 
     final pipeline = _TemplateProcessingPipeline([
-      _extendsProcessor,
-      _includeProcessor,
+      ExtendsProcessor(),
+      IncludeProcessor(),
       _sectionProcessor,
-      _errorProcessor,
-      _sessionProcessor,
-      _forLoopProcessor,
-      _switchCaseProcess,
-      _conditionalProcess,
-      _variablesProcess,
-      _csrfProcessor,
-      _csrfTokenProcessor,
-      _oldProcessor
+      ErrorProcessor(),
+      SessionProcessor(),
+      ForLoopProcessor(),
+      SwitchCasesProcessor(),
+      IfStatementProcessor(),
+      VariablesProcessor(),
+      CsrfProcessor(),
+      CsrfTokenProcessor(),
+      OldProcessor(),
+      TranslateProcessor(),
+      CommentProcessor(),
     ]);
 
     final renderedContent = pipeline.run(templateContent, data);
