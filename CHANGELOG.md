@@ -1,3 +1,13 @@
+## 0.7.3
+
+- Fix Authentication bug
+- Refactor vania hash
+- Fix incoming requests bug
+- Fix csrf and session issue
+- Fix Authentication issue
+- Add(Template engine): `comment` tag to the template engine `{@# Comments here #@}`
+- Add(Template engine): translate tag to the template engine `{@ trans('welcome', {"name": "Vania"}) @}`
+
 ## 0.7.2
 
 - Add(Template engine): error handler `hasError('email')` , `{@ error('email') @}`
