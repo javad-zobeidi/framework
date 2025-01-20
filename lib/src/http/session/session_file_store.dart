@@ -42,8 +42,18 @@ class SessionFileStore {
 
     int expiration =
         DateTime.now().toUtc().millisecondsSinceEpoch + duration.inMilliseconds;
-    await file.writeAsString(VaniaEncryption.encryptString(
-        json.encode({"data": data, "expiration": expiration}), _secretKey));
+
+    await file.writeAsString(
+      VaniaEncryption.encryptString(
+        json.encode(
+          {
+            "data": data,
+            "expiration": expiration,
+          },
+        ),
+        _secretKey,
+      ),
+    );
   }
 
   /// Retrieves a session from the file system. The session is retrieved from the sessionPath directory,
@@ -60,13 +70,20 @@ class SessionFileStore {
       return null;
     }
 
-    Map<String, dynamic> data = json.decode(
-        VaniaEncryption.decryptString(await file.readAsString(), _secretKey));
+    final fileContent = VaniaEncryption.decryptString(
+      await file.readAsString(),
+      _secretKey,
+    );
+
+    Map<String, dynamic> data = fileContent.isEmpty
+        ? {}
+        : json.decode(
+            fileContent,
+          );
     int expiration = data['expiration'].toString().toInt() ?? 0;
-    if (!DateTime.now()
-        .toUtc()
-        .isBefore(DateTime.fromMillisecondsSinceEpoch(expiration))) {
-      file.deleteSync();
+    if (!DateTime.now().toUtc().isBefore(
+          DateTime.fromMillisecondsSinceEpoch(expiration),
+        )) {
       return null;
     }
     return data['data'];
@@ -77,18 +94,8 @@ class SessionFileStore {
   /// The method is synchronous and returns a boolean indicating if the session exists and is valid.
   /// If the session has expired, the method deletes the file and returns false.
   Future<bool> hasSession(String sessionId) async {
-    sessionId = _makeHash(sessionId).toString();
-    final file = File('$sessionPath/$sessionId');
-    if (!file.existsSync()) {
-      return false;
-    }
-    Map<String, dynamic> data = json.decode(
-        VaniaEncryption.decryptString(await file.readAsString(), _secretKey));
-    int expiration = data['expiration'].toString().toInt() ?? 0;
-    if (!DateTime.now()
-        .toUtc()
-        .isBefore(DateTime.fromMillisecondsSinceEpoch(expiration))) {
-      file.deleteSync();
+    Map<String, dynamic>? data = await retrieveSession(sessionId);
+    if (data == null) {
       return false;
     }
     return true;
@@ -97,9 +104,17 @@ class SessionFileStore {
   Future<void> deleteSession(String sessionId) async {
     sessionId = _makeHash(sessionId).toString();
     final file = File('$sessionPath/$sessionId');
-    if (file.existsSync()) {
-      await file.delete();
-    }
+    int expiration = DateTime.now().toUtc().microsecondsSinceEpoch -
+        Duration(seconds: 0).inMilliseconds;
+    await file.writeAsString(VaniaEncryption.encryptString(
+      json.encode(
+        {
+          "data": {},
+          "expiration": expiration,
+        },
+      ),
+      _secretKey,
+    ));
   }
 
   Digest _makeHash(String key) {
