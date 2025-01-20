@@ -18,11 +18,11 @@ class Authenticate extends Middleware {
   handle(Request req) async {
     if (basic) {
       bool loggedIn = await getSession<bool?>('logged_in') ?? false;
-      if (loggedIn) {
-        String guard = await getSession<String?>('auth_guard') ?? '';
+      String guard = await getSession<String?>('auth_guard') ?? '';
+      if (loggedIn && guard.isNotEmpty) {
         Map<String, dynamic> user =
             await getSession<Map<String, dynamic>?>('auth_user') ?? {};
-        Auth().guard(guard).login(user[guard]);
+        Auth().guard(guard).login(user[guard], true);
       } else {
         throw Unauthenticated(
           message: loginPath,

@@ -57,16 +57,18 @@ class Auth {
   /// current guard.
   ///
   /// Returns the current instance of the `Auth` class.
-  Auth login(Map<String, dynamic> user) {
+  Auth login(Map<String, dynamic> user, [bool basic = false]) {
     _user[_userGuard] = user;
-    _updateSession();
+    if (basic) {
+      _updateSession();
+    }
     return this;
   }
 
   Future<void> logout() async {
-    await setSession('logged_in', false);
-    await setSession('auth_user', null);
-    await setSession('auth_guard', null);
+    await deleteSession('logged_in');
+    await deleteSession('auth_guard');
+    await deleteSession('auth_user');
     _loggedIn = false;
     if (_currentToken.isNotEmpty) {
       try {
