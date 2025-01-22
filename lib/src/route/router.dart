@@ -115,6 +115,13 @@ class Router {
     return this;
   }
 
+  Router name([String? name]) {
+    if (name != null) {
+      _routes.last.name = name;
+    }
+    return this;
+  }
+
   /// Adds a domain to the last added route.
   Router domain([String? domain]) {
     if (domain != null) {
@@ -225,6 +232,7 @@ class Router {
     String? prefix,
     List<Middleware>? middleware,
     String? domain,
+    String regex = r'\d+(\.\d+)?',
   }) {
     Router.get(path, action.index)
         .middleware(middleware)
@@ -245,25 +253,25 @@ class Router {
         .middleware(middleware)
         .domain(domain)
         .prefix(prefix)
-        .whereInt('id');
+        .where('id', regex);
 
     Router.get("$path/{id}/edit", action.edit)
         .middleware(middleware)
         .domain(domain)
         .prefix(prefix)
-        .whereInt('id');
+        .where('id', regex);
 
     Router.put("$path/{id}", action.update)
         .middleware(middleware)
         .domain(domain)
         .prefix(prefix)
-        .whereInt('id');
+        .where('id', regex);
 
     Router.delete("$path/{id}", action.destroy)
         .middleware(middleware)
         .domain(domain)
         .prefix(prefix)
-        .whereInt('id');
+        .where('id', regex);
   }
 
   /// Adds a websocket route.
