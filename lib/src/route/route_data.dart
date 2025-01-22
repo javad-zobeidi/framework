@@ -10,6 +10,7 @@ class RouteData {
   final bool? corsEnabled;
   final bool hasRequest;
   final String? prefix;
+  String? name;
   Map<String, Type>? paramTypes;
   Map<String, String>? regex;
 
@@ -24,6 +25,7 @@ class RouteData {
     this.prefix,
     this.hasRequest = false,
     this.paramTypes,
+    this.name,
     this.regex,
   });
 }

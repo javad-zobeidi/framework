@@ -70,36 +70,25 @@ class CsrfMiddleware extends Middleware {
     return value;
   }
 
-  /// Check if the given path is excluded from CSRF validation by checking if it
-  /// matches any of the patterns in the given list.
-  ///
-  /// The list of patterns can contain simple strings or strings with a wildcard
-  /// at the end (e.g. 'api/*'). If the path matches a pattern with a wildcard
-  /// then it is considered excluded.
-  ///
-  /// The path is considered excluded if it starts with the pattern without the
-  /// wildcard or if it matches the regular expression created by replacing the
-  /// wildcard with '.*'.
-  ///
-  /// For example, if the pattern is 'api/*' then the path will be considered
-  /// excluded if it starts with '/api/' or if it matches the regular expression
-  /// '^/api/.*$'.
-  ///
   bool _isUrlExcluded(String path, List<String> csrfExcept) {
+    final cleanPath = path.startsWith('/') ? path.substring(1) : path;
     for (var pattern in csrfExcept) {
-      if (pattern.toLowerCase().contains('/*')) {
-        final regexPattern =
-            '^/${pattern.toLowerCase().replaceAll('/*', '/.*')}\$';
-        final regex = RegExp(regexPattern);
-        if (regex.hasMatch(path)) {
+      final cleanPattern =
+          pattern.startsWith('/') ? pattern.substring(1) : pattern;
+      if (cleanPattern.contains('*')) {
+        final regexStr =
+            cleanPattern.replaceAll('*', '.*').replaceAll('/', '\\/');
+        final regex = RegExp('^$regexStr\$', caseSensitive: false);
+        if (regex.hasMatch(cleanPath)) {
           return true;
         }
-      } else if (path.startsWith(
-        '/${pattern.replaceFirst('/', '').toLowerCase()}',
-      )) {
+      } else if (cleanPath
+          .toLowerCase()
+          .startsWith(cleanPattern.toLowerCase())) {
         return true;
       }
     }
+
     return false;
   }
 }
