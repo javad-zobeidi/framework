@@ -1,3 +1,14 @@
+## 0.7.4+1
+
+- chore: Upgraded project dependencies
+
+## 0.7.4
+
+- Add Route name
+- Add(Template engine): Route `{@ route('home') @}` , `{@ route('home', {"id":1}) @}`
+- Add(Template engine): assets `{@ asset('css/style.css') @}`
+- Fix `csrf` url excluded
+
 ## 0.7.3
 
 - Fix Authentication bug
