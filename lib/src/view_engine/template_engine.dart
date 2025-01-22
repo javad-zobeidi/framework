@@ -1,6 +1,7 @@
 import 'package:vania/src/view_engine/processor_engine/abs_processor.dart';
 import 'package:vania/src/view_engine/processor_engine/variables_processor.dart';
 
+import 'processor_engine/assets_processor.dart';
 import 'processor_engine/comment_processor.dart';
 import 'processor_engine/csrf_processor.dart';
 import 'processor_engine/csrf_token_processor.dart';
@@ -10,6 +11,7 @@ import 'processor_engine/extends_processor.dart';
 import 'processor_engine/for_loop_processor.dart';
 import 'processor_engine/include_processor.dart';
 import 'processor_engine/old_processor.dart';
+import 'processor_engine/route_processor.dart';
 import 'processor_engine/section_processor.dart';
 import 'processor_engine/session_processor.dart';
 import 'processor_engine/switch_cases_processor.dart';
@@ -86,6 +88,8 @@ class TemplateEngine {
       OldProcessor(),
       TranslateProcessor(),
       CommentProcessor(),
+      RouteProcessor(),
+      AssetsProcessor(),
     ]);
 
     final renderedContent = pipeline.run(templateContent, data);

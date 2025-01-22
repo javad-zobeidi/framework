@@ -18,7 +18,6 @@ class TranslateProcessor implements AbsProcessor {
       try {
         args = jsonDecode(match.group(2)!);
       } catch (e) {
-        print(e);
         args = {};
       }
       return trans(key, args);
