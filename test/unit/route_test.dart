@@ -1,4 +1,5 @@
 import 'package:test/test.dart';
+import 'package:vania/src/route/middleware/csrf_middleware.dart';
 import 'package:vania/src/route/route_data.dart';
 import 'package:vania/vania.dart';
 
@@ -11,6 +12,7 @@ void main() {
     test('get route', () {
       Router.get('/get', () {});
       RouteData data = Router().routes.first;
+      data.preMiddleware.remove(CsrfMiddleware());
       expect(data.path, '/get');
       expect(data.method, 'get');
     });
@@ -18,6 +20,7 @@ void main() {
     test('post route', () {
       Router.post('/post', () {});
       RouteData data = Router().routes.first;
+      data.preMiddleware.remove(CsrfMiddleware());
       expect(data.path, '/post');
       expect(data.method, 'post');
     });
@@ -25,6 +28,7 @@ void main() {
     test('delete route', () {
       Router.delete('/delete', () {});
       RouteData data = Router().routes.first;
+      data.preMiddleware.remove(CsrfMiddleware());
       expect(data.path, '/delete');
       expect(data.method, 'delete');
     });
@@ -32,6 +36,7 @@ void main() {
     test('put route', () {
       Router.put('/put', () {});
       RouteData data = Router().routes.first;
+      data.preMiddleware.remove(CsrfMiddleware());
       expect(data.path, '/put');
       expect(data.method, 'put');
     });
@@ -39,6 +44,7 @@ void main() {
     test('patch route', () {
       Router.patch('/patch', () {});
       RouteData data = Router().routes.first;
+      data.preMiddleware.remove(CsrfMiddleware());
       expect(data.path, '/patch');
       expect(data.method, 'patch');
     });
@@ -53,6 +59,7 @@ void main() {
     test('domain route', () {
       Router.get('/get-with-domain', () {}).domain('{username}.test.com');
       RouteData data = Router().routes.first;
+      data.preMiddleware.remove(CsrfMiddleware());
       expect(data.domain, '{username}.test.com');
       expect(data.method, 'get');
     });
@@ -67,7 +74,9 @@ void main() {
         Router.options('/options', () {});
       });
       List<RouteData> data = Router().routes;
-
+      for (var m in data) {
+        m.preMiddleware.remove(CsrfMiddleware());
+      }
       expect(data[0].path, '/get');
       expect(data[0].method, 'get');
 
