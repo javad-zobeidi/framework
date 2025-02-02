@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:vania/src/ioc_container.dart';
 import 'package:vania/src/localization_handler/localization.dart';
 import 'package:vania/vania.dart';
 
@@ -32,7 +33,6 @@ abort(int code, String message) {
   throw HttpResponseException(message: message, code: code);
 }
 
-// Databse Helper
 Connection? get connection => DatabaseClient().database?.connection;
 
 // DB Transaction
@@ -57,12 +57,13 @@ Response view(String template, [Map<String, dynamic>? context]) =>
     Response.html(TemplateEngine().render(template, context));
 
 Future<void> setSession(String key, dynamic value) async =>
-    await SessionManager().setSession(key, value);
+    await IoCContainer().resolve<SessionManager>().setSession(key, value);
 Future<T> getSession<T>(String key) async =>
-    TemplateEngine().sessions[key] ?? await SessionManager().getSession<T>(key);
+    TemplateEngine().sessions[key] ??
+    await IoCContainer().resolve<SessionManager>().getSession<T>(key);
 Future<Map<String, dynamic>?> allSessions() async =>
-    await SessionManager().allSessions();
+    IoCContainer().resolve<SessionManager>().allSessions;
 Future<void> deleteSession(String key) async =>
-    await SessionManager().deleteSession(key);
+    await IoCContainer().resolve<SessionManager>().deleteSession(key);
 Future<void> destroyAllSessions() async =>
-    await SessionManager().destroyAllSessions();
+    await IoCContainer().resolve<SessionManager>().destroyAllSessions();

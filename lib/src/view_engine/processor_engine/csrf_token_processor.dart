@@ -1,4 +1,5 @@
 import 'package:vania/src/http/session/session_manager.dart';
+import 'package:vania/src/ioc_container.dart';
 import 'package:vania/src/view_engine/processor_engine/abs_processor.dart';
 
 class CsrfTokenProcessor implements AbsProcessor {
@@ -10,7 +11,7 @@ class CsrfTokenProcessor implements AbsProcessor {
     );
 
     return content.replaceAllMapped(csrfMethodPattern, (match) {
-      return SessionManager().csrfToken;
+      return IoCContainer().resolve<SessionManager>().csrfToken;
     });
   }
 }

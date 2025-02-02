@@ -1,62 +1,56 @@
 import 'dart:convert';
-
 import 'package:crypto/crypto.dart';
 import 'package:vania/src/exception/page_expired_exception.dart';
+import 'package:vania/src/http/session/session_manager.dart';
+import 'package:vania/src/ioc_container.dart';
 import 'package:vania/src/utils/functions.dart';
 import 'package:vania/vania.dart';
-
 import 'dart:async';
 
 class CsrfMiddleware extends Middleware {
-  /// This middleware is used to verify the CSRF token in the request.
-  ///
-  /// The middleware checks if the request method is one of the [POST],[PUT],[Patch]
-  /// and checks if the request URI is not in the list of excluded paths from the CSRF
-  /// validation.
-  ///
-  /// If the request URI is not in the excluded list, then it checks if the
-  /// _csrf or _token input field is present in the request, if not then it
-  /// throws a PageExpiredException.
-  ///
-  /// If the token is present, then it verifies the token with the stored token
-  /// in the session, if the verification fails then it throws a
-  /// PageExpiredException.
-  ///
+  final SessionManager _sessionManager =
+      IoCContainer().resolve<SessionManager>();
+
   @override
   Future<void> handle(Request req) async {
-    if (req.method!.toLowerCase() == 'post' ||
-        req.method!.toLowerCase() == 'put' ||
-        req.method!.toLowerCase() == 'patch') {
+    if (req.method?.toLowerCase() == 'post' ||
+        req.method?.toLowerCase() == 'put' ||
+        req.method?.toLowerCase() == 'patch') {
       List<String> csrfExcept = ['api/*'];
       csrfExcept.addAll(Config().get('csrf_except') ?? []);
 
-      String uri = Uri.parse(
-        sanitizeRoutePath(
-          req.uri.toString(),
-        ),
-      ).path.toLowerCase();
-
+      String uri =
+          Uri.parse(sanitizeRoutePath(req.uri.toString())).path.toLowerCase();
       if (!_isUrlExcluded(uri, csrfExcept)) {
-        String csrfToken = req.cookie('XSRF-TOKEN') ?? '';
-        if (csrfToken.isNotEmpty) {
-          csrfToken = _fixBase64Padding(csrfToken);
+        String requestCookie = req.cookie('XSRF-TOKEN') ?? '';
+        Map<String, dynamic> cookie = {};
+        if (requestCookie.isNotEmpty) {
+          cookie = jsonDecode(
+              utf8.decode(base64.decode(_fixBase64Padding(requestCookie))));
         }
-        String? token = req.input('_csrf');
-        token ??= req.input('_token');
-        token ??= req.header('X-CSRF-TOKEN');
 
-        if (token == null) {
+        String? token = req.input('_csrf') ??
+            req.input('_token') ??
+            req.header('X-CSRF-TOKEN');
+        if (token == null || token.isEmpty) {
           throw PageExpiredException();
         }
 
-        String storedToken = await getSession<String?>('x_csrf_token') ?? '';
+        final storedToken =
+            await _sessionManager.getSession<String?>('x_csrf_token');
+        if (storedToken == null || storedToken.isEmpty) {
+          throw PageExpiredException();
+        }
+
         if (storedToken != token) {
           throw PageExpiredException();
         }
-        String iv = await getSession<String?>('x_csrf_token_iv') ?? '';
-        var hmac = Hmac(sha512, utf8.encode(iv));
-        final Digest hash = hmac.convert(utf8.encode(token));
-        if (base64.encode(hash.bytes) != csrfToken) {
+
+        String iv = await _sessionManager.getSession<String>('x_csrf_iv');
+
+        String expectedCookie = _computeCsrfCookieValue(storedToken, iv);
+
+        if (expectedCookie != cookie['token']) {
           throw PageExpiredException();
         }
       }
@@ -88,7 +82,12 @@ class CsrfMiddleware extends Middleware {
         return true;
       }
     }
-
     return false;
+  }
+
+  String _computeCsrfCookieValue(String token, String iv) {
+    var hmac = Hmac(sha512, utf8.encode(iv));
+    final Digest digest = hmac.convert(utf8.encode(token));
+    return base64.encode(digest.bytes);
   }
 }
