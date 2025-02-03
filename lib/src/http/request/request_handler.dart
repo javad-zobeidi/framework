@@ -97,6 +97,10 @@ class RequestHandler {
           return Response.redirect(error.message).makeResponse(req.response);
         }
 
+        if (error is RedirectException && isHtml) {
+          return Response.redirect(error.message).makeResponse(req.response);
+        }
+
         error
             .response(
               isHtml,
