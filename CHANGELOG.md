@@ -1,3 +1,14 @@
+## 0.8.0
+
+- Fix session bug
+- Add `RedirectIfAuthenticated` Middleware
+- Add(Response): Back with input
+- Add(Request Validation): `RegExp` rule [#167](https://github.com/vania-dart/framework/issues/167)
+- Add(Request Validation): Custom Validation Rule
+- Add lockFile method for atomic session file handling
+- Remove Isolate from code
+- Refactor HttpRequest handler method to class-based structure
+
 ## 0.7.4+1
 
 - chore: Upgraded project dependencies
