@@ -296,4 +296,9 @@ class Rules {
       return hasValidExtension(value);
     }
   }
+
+  static bool regExp(Map<String, dynamic> data, dynamic value, String args) {
+    RegExp regExp = RegExp(args);
+    return regExp.hasMatch(value.toString());
+  }
 }

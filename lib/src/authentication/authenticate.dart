@@ -22,7 +22,7 @@ class Authenticate extends Middleware {
       if (loggedIn && guard.isNotEmpty) {
         Map<String, dynamic> user =
             await getSession<Map<String, dynamic>?>('auth_user') ?? {};
-        Auth().guard(guard).login(user[guard], true);
+        Auth().guard(guard).login(user[guard]);
       } else {
         throw Unauthenticated(
           message: loginPath,

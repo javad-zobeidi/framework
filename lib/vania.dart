@@ -44,6 +44,7 @@ export 'package:eloquent/eloquent.dart' show QueryException, Connection;
 
 export 'src/authentication/authentication.dart';
 export 'src/authentication/authenticate.dart';
+export 'src/authentication/redirect_if_authenticated.dart';
 export 'src/cryptographic/hash.dart';
 export 'src/authentication/has_api_tokens.dart';
 
@@ -61,5 +62,6 @@ export 'src/redis/vania_redis.dart';
 export 'src/cache/redis_cache_driver.dart';
 
 export 'src/http/validation/validation_chain/export_chain_validation.dart';
+export 'src/http/validation/custom_validation_rule.dart';
 
 export 'src/authentication/gate/gate.dart';

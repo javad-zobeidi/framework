@@ -22,7 +22,7 @@ class Auth {
 
   bool get loggedIn => _loggedIn;
 
-  Map<String, dynamic>? user() => _user[_userGuard];
+  Map<String, dynamic> user() => _user[_userGuard];
 
   dynamic id() => _user[_userGuard]['id'] ?? _user[_userGuard]['_id'];
 
@@ -70,14 +70,6 @@ class Auth {
     await deleteSession('auth_guard');
     await deleteSession('auth_user');
     _loggedIn = false;
-    if (_currentToken.isNotEmpty) {
-      try {
-        await PersonalAccessTokens()
-            .query()
-            .where('token', '=', md5.convert(utf8.encode(_currentToken)))
-            .update({'deleted_at': DateTime.now()});
-      } catch (_) {}
-    }
   }
 
   /// Updates the current session with the given user and guard.
@@ -91,13 +83,7 @@ class Auth {
   Future<void> _updateSession() async {
     await setSession('logged_in', true);
     await setSession('auth_guard', _userGuard);
-    Map<String, dynamic> user =
-        await getSession<Map<String, dynamic>?>('auth_user') ?? {};
-    if (_user != user) {
-      await deleteSession('auth_user');
-      await setSession('auth_user', _user);
-    }
-
+    await setSession('auth_user', _user);
     _loggedIn = true;
   }
 

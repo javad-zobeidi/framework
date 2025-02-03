@@ -212,4 +212,23 @@ class Response {
       httpStatusCode: HttpStatus.found,
     );
   }
+
+  static backWithInput([String? input, String? message]) {
+    String previousRoute = RouteHistory().previousRoute;
+    if (input != null && message != null) {
+      TemplateEngine().sessionErrors[input] = message;
+    }
+    if (previousRoute.isNotEmpty) {
+      return Response(
+        responseType: ResponseType.redirect,
+        data: previousRoute,
+        httpStatusCode: HttpStatus.found,
+      );
+    }
+    return Response(
+      responseType: ResponseType.redirect,
+      data: RouteHistory().currentRoute,
+      httpStatusCode: HttpStatus.found,
+    );
+  }
 }

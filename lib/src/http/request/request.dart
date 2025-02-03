@@ -40,6 +40,13 @@ class Request {
   Map<String, dynamic> body = <String, dynamic>{};
   final Map<String, dynamic> _cookies = <String, dynamic>{};
 
+  List<CustomValidationRule>? _customRules;
+
+  Request setCustomRule(List<CustomValidationRule> customRule) {
+    _customRules = customRule;
+    return this;
+  }
+
   /// Gets a cookie by name and casts it to type [T].
   ///
   /// If the cookie doesn't exist, it returns `null`.
@@ -318,8 +325,10 @@ class Request {
     return header(HttpHeaders.refererHeader);
   }
 
-  void validate(dynamic rules,
-      [Map<String, String> messages = const <String, String>{}]) {
+  void validate(
+    dynamic rules, [
+    Map<String, String> messages = const <String, String>{},
+  ]) {
     assert(rules is Map<String, String> || rules is List<Validation>,
         'Rules must be either Map<String, String> or List<Validation>.');
     TemplateEngine().sessionErrors.clear();
@@ -330,9 +339,16 @@ class Request {
     }
   }
 
-  void _validate(Map<String, String> rules,
-      [Map<String, String> messages = const <String, String>{}]) {
+  void _validate(
+    Map<String, String> rules, [
+    Map<String, String> messages = const <String, String>{},
+  ]) {
     Validator validator = Validator(data: all());
+
+    if (_customRules != null) {
+      validator.customRule(_customRules!);
+    }
+
     if (messages.isNotEmpty) {
       validator.setNewMessages(messages);
     }

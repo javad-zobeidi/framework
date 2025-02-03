@@ -1,10 +1,14 @@
 import 'package:test/test.dart';
+import 'package:vania/src/http/session/session_manager.dart';
+import 'package:vania/src/ioc_container.dart';
 import 'package:vania/src/route/route_data.dart';
 import 'package:vania/vania.dart';
 
 void main() {
   group('Route Test', () {
     setUp(() {
+      IoCContainer()
+          .register<SessionManager>(() => SessionManager(), singleton: true);
       Router().routes.clear();
     });
 
@@ -67,7 +71,6 @@ void main() {
         Router.options('/options', () {});
       });
       List<RouteData> data = Router().routes;
-
       expect(data[0].path, '/get');
       expect(data[0].method, 'get');
 

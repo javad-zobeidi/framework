@@ -1,7 +1,11 @@
 import 'package:vania/src/container.dart';
+import 'package:vania/src/ioc_container.dart';
 import 'package:vania/src/localization_handler/localization.dart';
 import 'package:vania/src/server/base_http_server.dart';
 import 'package:vania/vania.dart';
+
+import 'http/request/request_handler.dart';
+import 'http/session/session_manager.dart';
 
 class Application extends Container {
   static Application? _singleton;
@@ -17,27 +21,21 @@ class Application extends Container {
 
   Application._internal();
 
-  late BaseHttpServer server;
+  late BaseHttpServer _server;
 
   Future<void> initialize({required Map<String, dynamic> config}) async {
+    IoCContainer().register<RequestHandler>(() => RequestHandler());
+    IoCContainer()
+        .register<SessionManager>(() => SessionManager(), singleton: true);
     if (env('APP_KEY') == '' || env('APP_KEY') == null) {
       throw Exception('Key not found');
     }
 
-    server = BaseHttpServer(config: config);
-
-    if (env<bool>('ISOLATE', false)) {
-      await server.spawnIsolates(env<int>('ISOLATE_NUMBER', 1));
-    } else {
-      server.startServer();
-    }
+    _server = BaseHttpServer(config: config);
+    _server.startServer();
   }
 
   Future<void> close() async {
-    if (env<bool>('ISOLATE', false)) {
-      server.killAll();
-    } else {
-      server.httpServer?.close();
-    }
+    _server.httpServer?.close();
   }
 }

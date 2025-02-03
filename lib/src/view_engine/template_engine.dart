@@ -75,7 +75,6 @@ class TemplateEngine {
 
     final pipeline = _TemplateProcessingPipeline([
       ExtendsProcessor(),
-      IncludeProcessor(),
       _sectionProcessor,
       ErrorProcessor(),
       SessionProcessor(),
@@ -90,6 +89,7 @@ class TemplateEngine {
       CommentProcessor(),
       RouteProcessor(),
       AssetsProcessor(),
+      IncludeProcessor(),
     ]);
 
     final renderedContent = pipeline.run(templateContent, data);

@@ -2,6 +2,7 @@ import 'package:sprintf/sprintf.dart';
 import 'package:vania/src/extensions/string_list_extension.dart';
 import 'package:vania/src/extensions/map_extension.dart';
 
+import 'custom_validation_rule.dart';
 import 'nested_validation.dart';
 import 'rules.dart';
 import 'validation_item.dart';
@@ -21,24 +22,25 @@ class Validator {
   /// get list of error messages
   Map<String, String> get errors => _errors;
 
-  /// add custom rule
-  /// ```
-  /// validator.customRule('unique', {
-  ///   message: 'The {value} already exist',
-  ///   fn: (Map<String, dynamic> data, dynamic value, String? arguments) {
-  ///     /// add your logic here
-  ///   }
-  /// });
-  /// ```
-  void customRule({
-    required String ruleName,
-    required String message,
-    required bool Function(Map<String, dynamic>, dynamic, String?) fn,
-  }) {
-    _matchingRules[ruleName] = <String, dynamic>{
-      'message': message,
-      'function': fn,
-    };
+  /// Add custom validation rules to the validator.
+  ///
+  /// This method allows the addition of custom validation rules to the
+  /// validator. Each rule is represented by a [CustomValidationRule] object,
+  /// which includes the rule's name, error message, and validation function.
+  ///
+  /// The rule's name is used as a key in the internal [_matchingRules] map,
+  /// and the rule's message and function are stored as values. This allows
+  /// for custom validation logic to be applied during the validation process.
+  ///
+  /// [rules] is a list of [CustomValidationRule] objects to be added.
+  ///
+  void customRule(List<CustomValidationRule> rules) {
+    for (CustomValidationRule rule in rules) {
+      _matchingRules[rule.ruleName] = <String, dynamic>{
+        'message': rule.message,
+        'function': rule.fn,
+      };
+    }
   }
 
   /// set custom validator messages
@@ -70,7 +72,6 @@ class Validator {
   /// validator.validate({'field' : 'required|string'});
   /// ```
   void validate(Map<String, String> rules) {
-    // print(_matchingRules);
     rules.forEach((String field, String rule) {
       if (_isNestedValidation(field)) {
         NestedValidation v =
@@ -273,6 +274,10 @@ class Validator {
     'file': <String, dynamic>{
       'message': 'The {field} is either invalid or unsupported extension',
       'function': Rules.isFile,
+    },
+    'reg_exp': <String, dynamic>{
+      'message': 'The {field} is either invalid or unsupported extension',
+      'function': Rules.regExp,
     },
   };
 }

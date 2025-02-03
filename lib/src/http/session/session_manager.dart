@@ -6,10 +6,6 @@ import 'package:vania/vania.dart';
 import 'session_file_store.dart';
 
 class SessionManager {
-  static final SessionManager _instance = SessionManager._internal();
-  factory SessionManager() => _instance;
-  SessionManager._internal();
-
   HttpRequest? _request;
 
   String sessionKey = '${env<String>('APP_NAME', 'Vania')}_session';
@@ -17,6 +13,10 @@ class SessionManager {
   String _csrfToken = '';
 
   String get csrfToken => _csrfToken;
+
+  Map<String, dynamic> _allSessions = {};
+
+  Map<String, dynamic> get allSessions => _allSessions;
 
   final Duration _sessionLifeTime =
       Duration(seconds: env<int>('SESSION_LIFETIME', 9000));
@@ -50,38 +50,69 @@ class SessionManager {
   /// attributes such as domain, expiration, SameSite policy, and HTTP-only flag
   /// to mitigate CSRF attacks.
   Future<void> createXsrfToken(
-    HttpRequest request,
-    HttpResponse response,
-  ) async {
-    final cookie = request.cookies.firstWhere(
-      (c) => c.name == 'XSRF-TOKEN',
+      HttpRequest request, HttpResponse response) async {
+    Cookie requestCookie = request.cookies.firstWhere(
+      (cookie) => cookie.name == 'XSRF-TOKEN',
       orElse: () => Cookie('XSRF-TOKEN', ''),
     );
-    String token = cookie.value;
-    _csrfToken = await getSession<String?>('x_csrf_token') ?? '';
-    String iv = await getSession<String?>('x_csrf_token_iv') ?? '';
-
-    if (token.isEmpty || _csrfToken.isEmpty || iv.isEmpty) {
-      await generateNewToken(response);
+    if (requestCookie.value.isEmpty) {
+      await _generateNewCsrfToken(response);
+    } else {
+      String? storedToken = _allSessions['x_csrf_token'];
+      if (storedToken == null || storedToken.isEmpty) {
+        await _generateNewCsrfToken(response);
+      } else {
+        _csrfToken = storedToken;
+      }
     }
   }
 
-  Future<void> generateNewToken(HttpResponse response) async {
+  /// Generates a new CSRF token and stores it in the session and a secure cookie.
+  ///
+  /// This method generates a random CSRF token and initialization vector (IV),
+  /// stores them in the session and a secure cookie, and sets the cookie in the
+  /// response. The cookie is configured with security attributes such as
+  /// expiration, SameSite policy, and HTTP-only flag to mitigate CSRF attacks.
+  ///
+  /// Parameters:
+  /// - `response`: The HTTP response where the CSRF token cookie will be added.
+  ///
+  /// The generated CSRF token is URL-safe and securely stored in the session with
+  /// the specified session lifetime.
+  Future<void> _generateNewCsrfToken(HttpResponse response) async {
     String token = randomString(length: 40, numbers: true);
     String iv = randomString(length: 32, numbers: true);
-    await setSession('x_csrf_token_iv', iv);
     await setSession('x_csrf_token', token);
+    await setSession('x_csrf_iv', iv);
     _csrfToken = token;
+    String cookieValue = _computeCsrfCookieValue(token, iv);
+    Cookie cookie = Cookie('XSRF-TOKEN', cookieValue)
+      ..expires = DateTime.now().add(Duration(seconds: 9000))
+      ..sameSite = SameSite.lax
+      ..secure = secureSession
+      ..path = '/'
+      ..httpOnly = true;
+    response.cookies.add(cookie);
+  }
+
+  /// Computes the value of the CSRF cookie for the given CSRF token and
+  /// initialization vector (IV).
+
+  /// The method uses the HMAC algorithm with SHA-512 to create a digest from
+  /// the given token and IV. The digest is then encoded in Base64 and stored
+  /// in the CSRF cookie in the response. The cookie is configured with
+  /// security attributes such as expiration, SameSite policy, and HTTP-only flag
+  /// to mitigate CSRF attacks.
+  String _computeCsrfCookieValue(String token, String iv) {
     var hmac = Hmac(sha512, utf8.encode(iv));
-    final Digest hash = hmac.convert(utf8.encode(token));
-    response.cookies.add(
-      Cookie('XSRF-TOKEN', base64.encode(hash.bytes))
-        ..expires = DateTime.now().add(Duration(seconds: 9000))
-        ..sameSite = SameSite.lax
-        ..secure = secureSession
-        ..path = '/'
-        ..httpOnly = true,
-    );
+    final Digest digest = hmac.convert(utf8.encode(token));
+    return base64.encode(utf8.encode(
+      jsonEncode(
+        {
+          'token': base64.encode(digest.bytes),
+        },
+      ),
+    ));
   }
 
   /// Starts a new session or retrieves an existing session from the request.
@@ -123,14 +154,7 @@ class SessionManager {
         ..expires = DateTime.now().add(_sessionLifeTime),
     );
 
-    _request?.cookies.add(
-      Cookie(sessionKey, sessionId)
-        ..httpOnly = true
-        ..secure = secureSession
-        ..path = '/'
-        ..sameSite = SameSite.lax
-        ..expires = DateTime.now().add(_sessionLifeTime),
-    );
+    await _featchAllSessions(sessionId);
 
     await createXsrfToken(request, response);
   }
@@ -143,51 +167,36 @@ class SessionManager {
     return cookie?.value;
   }
 
-  /// Retrieves all session data associated with the current session ID.
-  ///
-  /// This function checks if there is an active session by retrieving the
-  /// If a session is found, it verifies the existence and
-  /// validity of the session. If the session exists, it retrieves and returns
-  /// the session data as a map. If the session does not exist or is invalid,
-  /// it returns null.
-  ///
-  /// Returns:
-  /// A map containing the session data if a valid session exists, otherwise
-  /// returns null.
-  Future<Map<String, dynamic>?> allSessions() async {
-    final sessionId = getSessionId();
-    if (sessionId != null) {
-      if (!await SessionFileStore().hasSession(sessionId)) {
-        return null;
-      }
-      Map<String, dynamic> session = {};
-
-      session = await SessionFileStore().retrieveSession(sessionId) ?? {};
-      return session;
-    }
-    return null;
+  Future<void> _featchAllSessions(String sessionId) async {
+    _allSessions = await SessionFileStore().retrieveSession(sessionId) ?? {};
   }
 
   Future<T> getSession<T>(String key) async {
-    Map<String, dynamic>? session = await allSessions();
+    if (_allSessions.isEmpty) {
+      final sessionId = getSessionId();
+      if (sessionId != null) {
+        _allSessions =
+            await SessionFileStore().retrieveSession(sessionId) ?? {};
+      }
+    }
 
-    if (session?[key] == null) {
+    if (_allSessions[key] == null) {
       return null as T;
     }
 
     if (T.toString() == 'int') {
-      return int.tryParse(session?[key].toString() ?? '') as T;
+      return int.tryParse(_allSessions[key].toString()) as T;
     }
 
     if (T.toString() == 'double') {
-      return double.tryParse(session?[key].toString() ?? '') as T;
+      return double.tryParse(_allSessions[key].toString()) as T;
     }
 
     if (T.toString() == 'bool') {
-      return bool.tryParse(session?[key].toString() ?? '') as T;
+      return bool.tryParse(_allSessions[key].toString()) as T;
     }
 
-    return session?[key];
+    return _allSessions[key];
   }
 
   /// Stores a value in the session data associated with the current session ID.
@@ -203,10 +212,11 @@ class SessionManager {
       Map<String, dynamic>? session =
           await SessionFileStore().retrieveSession(sessionId);
       if (session != null) {
-        session.addEntries([MapEntry(key, value)]);
+        session.addAll({key: value});
       } else {
         session = {key: value};
       }
+      _allSessions = session;
       await SessionFileStore().storeSession(sessionId, session);
     }
   }
@@ -227,6 +237,7 @@ class SessionManager {
           await SessionFileStore().retrieveSession(sessionId);
       if (session != null) {
         session.remove(key);
+        _allSessions = session;
         await SessionFileStore().storeSession(sessionId, session);
       }
     }
@@ -235,6 +246,7 @@ class SessionManager {
   Future<void> destroyAllSessions() async {
     final sessionId = getSessionId();
     if (sessionId != null) {
+      _allSessions = {};
       await SessionFileStore().storeSession(sessionId, {});
     }
   }
