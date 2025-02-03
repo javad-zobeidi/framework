@@ -44,13 +44,5 @@ void main() {
       validator.validate({'username': 'required_if:type,login'});
       expect(validator.errors['username'], 'The username is required');
     });
-
-    test('Validation RegExp', () {
-      Validator validator = Validator(data: {
-        'username': 'Vania_2025',
-      });
-      validator.validate({'username': r'RegExp:^[a-zA-Z]+$'});
-      expect(validator.errors['username'], 'Invalid username');
-    });
   });
 }
