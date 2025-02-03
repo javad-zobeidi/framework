@@ -58,7 +58,7 @@ class SessionManager {
     if (requestCookie.value.isEmpty) {
       await _generateNewCsrfToken(response);
     } else {
-      String? storedToken = await getSession<String?>('x_csrf_token');
+      String? storedToken = _allSessions['x_csrf_token'];
       if (storedToken == null || storedToken.isEmpty) {
         await _generateNewCsrfToken(response);
       } else {
@@ -154,9 +154,9 @@ class SessionManager {
         ..expires = DateTime.now().add(_sessionLifeTime),
     );
 
-    await createXsrfToken(request, response);
-
     await _featchAllSessions(sessionId);
+
+    await createXsrfToken(request, response);
   }
 
   String? getSessionId() {
@@ -212,7 +212,7 @@ class SessionManager {
       Map<String, dynamic>? session =
           await SessionFileStore().retrieveSession(sessionId);
       if (session != null) {
-        session.addEntries([MapEntry(key, value)]);
+        session.addAll({key: value});
       } else {
         session = {key: value};
       }
